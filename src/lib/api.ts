@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { ZodError, type z, type ZodTypeAny } from 'zod';
 import { AppError } from '@/lib/errors';
 
+/** True for AppError instances (or anything matching its operational shape). */
+function isOperationalError(
+  error: unknown,
+): error is { message: string; statusCode: number; code: string } {
+  if (error instanceof AppError) return true;
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { isOperational?: unknown }).isOperational === true &&
+    typeof (error as { statusCode?: unknown }).statusCode === 'number' &&
+    typeof (error as { code?: unknown }).code === 'string' &&
+    typeof (error as { message?: unknown }).message === 'string'
+  );
+}
+
 /** Standard API envelope. */
 export interface ApiSuccess<T> {
   success: true;
@@ -31,7 +46,10 @@ export function handleError(error: unknown): NextResponse<ApiFailure> {
   if (error instanceof ZodError) {
     return fail('Validation failed', 400, 'VALIDATION_ERROR', error.flatten().fieldErrors);
   }
-  if (error instanceof AppError) {
+  // Detect operational errors by shape, not just `instanceof` — across module
+  // boundaries / hot-reloads the AppError class identity can differ, which would
+  // otherwise turn a clean 400 into a misleading 500.
+  if (isOperationalError(error)) {
     return fail(error.message, error.statusCode, error.code);
   }
   // eslint-disable-next-line no-console
