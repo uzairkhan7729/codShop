@@ -11,12 +11,8 @@ import { Input } from '@/components/ui/input';
 import { useCartCount } from '@/hooks/use-cart';
 import { useCartUI } from '@/stores/cart-ui-store';
 import { Logo } from '@/components/storefront/logo';
-import { MegaMenu } from '@/components/storefront/mega-menu';
+import { CategoryBar } from '@/components/storefront/category-bar';
 import { cn } from '@/lib/utils';
-
-const NAV_CATEGORIES = [
-  'Electronics', 'Fashion', 'Home', 'Beauty', 'Sports', 'Books', 'Toys', 'Grocery',
-];
 
 export function Navbar() {
   const router = useRouter();
@@ -121,26 +117,8 @@ export function Navbar() {
         </nav>
       </div>
 
-      {/* Category strip with mega menu.
-          NOTE: the mega panel must NOT live inside an overflow-x container —
-          overflow-x:auto also clips the Y axis and would hide the dropdown. */}
-      <div className="border-t bg-muted/40">
-        <div className="container flex items-center gap-1 py-1">
-          <MegaMenu />
-          <span className="mx-1 hidden h-5 w-px bg-border md:block" />
-          <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
-            {NAV_CATEGORIES.map((c) => (
-              <Link
-                key={c}
-                href={`/products?category=${c.toLowerCase()}`}
-                className="whitespace-nowrap rounded-md px-3 py-1 text-sm text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
-              >
-                {c}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Category bar + shared mega flyout (hover All Categories or any department) */}
+      <CategoryBar />
 
       {/* Mobile menu */}
       <AnimatePresence>
