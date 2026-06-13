@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ProductDetail } from '@/components/storefront/product-detail';
@@ -10,14 +11,15 @@ import type { ProductDetail as ProductDetailType } from '@/server/services/produ
 // ISR for product pages (Module 10).
 export const revalidate = 300;
 
-async function loadProduct(slug: string): Promise<ProductDetailType | null> {
+// Deduped per request: generateMetadata and the page share a single fetch.
+const loadProduct = cache(async (slug: string): Promise<ProductDetailType | null> => {
   try {
     return await services.products.getProductBySlug(slug);
   } catch (error) {
     if (error instanceof NotFoundError) return null;
     return null; // DB unreachable at build → 404 page (regenerated on next request)
   }
-}
+});
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const detail = await loadProduct(params.slug);
