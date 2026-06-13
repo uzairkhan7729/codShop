@@ -90,14 +90,14 @@ Set all `.env` values as Render environment variables. Run `npm run db:push` and
 ## Module status
 
 - [x] **Module 1** — Database schema (Prisma + MongoDB, `ecom_` collections)
-- [ ] Module 2 — Repository layer
-- [ ] Module 3 — Service layer
-- [ ] Module 4 — API routes
-- [ ] Module 5 — Storefront
-- [ ] Module 6 — Admin panel
-- [ ] Module 7 — Seed data
-- [ ] Module 8 — Animations
-- [ ] Module 9 — Stripe integration
-- [ ] Module 10 — Caching & performance
-- [ ] Module 11 — Security
-- [ ] Module 12 — Error handling & monitoring
+- [x] **Module 2** — Repository layer (ORM-agnostic interfaces + Prisma impls)
+- [x] **Module 3** — Service layer (payment + discount abstractions, SOLID)
+- [x] **Module 4** — API routes (NextAuth, Zod, rate limiting)
+- [x] **Module 5** — Storefront (home, PLP, PDP, cart, account)
+- [x] **Module 6** — Admin panel (dashboard, products, orders, customers, …)
+- [x] **Module 7** — Seed data
+- [x] **Module 8** — Animations (Framer Motion across the app)
+- [x] **Module 9** — Stripe integration (Elements, webhook, refunds)
+- [x] **Module 10** — Caching & performance (Redis/memory, ISR, rate limit)
+- [x] **Module 11** — Security (JWT cookies, RBAC middleware, sanitize, headers)
+- [x] **Module 12** — Error handling (boundaries, typed API errors, toasts)

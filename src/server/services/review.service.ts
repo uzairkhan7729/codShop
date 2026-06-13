@@ -1,4 +1,5 @@
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '@/lib/errors';
+import { sanitizeText } from '@/lib/sanitize';
 import type {
   IProductRepository,
   IReviewRepository,
@@ -53,8 +54,8 @@ export class ReviewService {
 
     await this.reviews.create({
       rating: input.rating,
-      title: input.title,
-      comment: input.comment,
+      title: sanitizeText(input.title),
+      comment: sanitizeText(input.comment),
       product: { connect: { id: input.productId } },
       user: { connect: { id: userId } },
     });
