@@ -66,7 +66,11 @@ function buildWhere(filters: ProductFilters): Prisma.ProductWhereInput {
 
   if (filters.isActive !== undefined) where.isActive = filters.isActive;
   if (filters.isFeatured !== undefined) where.isFeatured = filters.isFeatured;
-  if (filters.categoryId) where.categoryId = filters.categoryId;
+  if (filters.categoryIds && filters.categoryIds.length > 0) {
+    where.categoryId = { in: filters.categoryIds };
+  } else if (filters.categoryId) {
+    where.categoryId = filters.categoryId;
+  }
   if (filters.brand) where.brand = filters.brand;
   if (filters.minRating !== undefined) where.ratingAvg = { gte: filters.minRating };
 

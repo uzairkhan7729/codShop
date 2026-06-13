@@ -40,6 +40,8 @@ export type ProductSort =
 export interface ProductFilters {
   search?: string;
   categoryId?: string;
+  /** Match products in any of these categories (a category subtree). */
+  categoryIds?: string[];
   categorySlug?: string;
   brand?: string;
   minPrice?: number;

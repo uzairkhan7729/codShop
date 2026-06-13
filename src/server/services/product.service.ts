@@ -32,14 +32,15 @@ export class ProductService {
     filters: ProductFilters,
     pagination: PaginationParams,
   ): Promise<Paginated<ProductWithRelations>> {
-    // Resolve a category slug (and its subtree) to concrete ids before caching.
+    // Resolve a category slug to its whole subtree (a parent category has no
+    // products directly — they live on its leaf children), before caching.
     const resolved: ProductFilters = { isActive: true, ...filters };
-    if (filters.categorySlug && !filters.categoryId) {
+    if (filters.categorySlug && !filters.categoryId && !filters.categoryIds) {
       const category = await this.categories.findBySlug(filters.categorySlug);
       if (!category) {
         return { items: [], total: 0, page: pagination.page, pageSize: pagination.pageSize, totalPages: 1 };
       }
-      resolved.categoryId = category.id;
+      resolved.categoryIds = await this.categories.descendantIds(category.id);
     }
 
     const cacheKey = `${CACHE_KEYS.products}${JSON.stringify({ resolved, pagination })}`;
