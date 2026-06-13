@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSyncGuestCart } from '@/hooks/use-cart';
-import { Logo } from '@/components/storefront/logo';
+import { AuthShell } from '@/components/auth-shell';
 
 function LoginForm() {
   const router = useRouter();
@@ -35,65 +36,57 @@ function LoginForm() {
     router.refresh();
   };
 
+  const fill = (email: string, password: string) => setForm({ email, password });
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm"
-    >
-      <Link href="/" className="mb-6 block text-center">
-        <Logo className="text-3xl" />
-      </Link>
-      <h1 className="mb-1 text-2xl font-bold">Sign in</h1>
-      <p className="mb-6 text-sm text-muted-foreground">Welcome back — please enter your details.</p>
+    <>
+      <h1 className="mb-1 text-2xl font-bold">Welcome back</h1>
+      <p className="mb-6 text-sm text-muted-foreground">Sign in to continue to your account.</p>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            required
-            autoComplete="email"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          />
+          <Input id="email" type="email" required autoComplete="email" placeholder="you@example.com"
+            value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            autoComplete="current-password"
-            value={form.password}
-            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-          />
+          <Input id="password" type="password" required autoComplete="current-password" placeholder="••••••••"
+            value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
         </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Signing in…' : 'Sign in'}
-        </Button>
+        <motion.div whileTap={{ scale: 0.98 }}>
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+            {loading ? (<><Loader2 className="h-4 w-4 animate-spin" /> Signing in…</>) : 'Sign in'}
+          </Button>
+        </motion.div>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          Create one
-        </Link>
+        <Link href="/register" className="font-medium text-primary hover:underline">Create one</Link>
       </p>
-      <p className="mt-4 rounded-md bg-muted p-3 text-center text-xs text-muted-foreground">
-        Demo: <strong>customer@noon.test / Customer123!</strong> · Admin: <strong>admin@noon.test / Admin123!</strong>
-      </p>
-    </motion.div>
+
+      <div className="mt-6 rounded-lg border border-dashed bg-muted/40 p-3 text-xs">
+        <p className="mb-2 font-medium text-muted-foreground">Demo accounts — click to fill:</p>
+        <div className="flex flex-col gap-1.5">
+          <button type="button" onClick={() => fill('customer@noon.test', 'Customer123!')} className="rounded-md bg-background px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground">
+            🛍️ Customer · customer@noon.test
+          </button>
+          <button type="button" onClick={() => fill('admin@noon.test', 'Admin123!')} className="rounded-md bg-background px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground">
+            🛠️ Admin · admin@noon.test
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
+    <AuthShell>
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>
-    </div>
+    </AuthShell>
   );
 }
