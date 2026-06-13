@@ -34,7 +34,7 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
     : stock <= product.lowStockThreshold ? { text: `Only ${stock} left`, variant: 'warning' as const }
     : { text: 'In stock', variant: 'success' as const };
 
-  const add = () =>
+  const add = (e: React.MouseEvent) =>
     addToCart.mutate({
       productId: product.id,
       variantId,
@@ -44,6 +44,8 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
       image: images[activeImage] ?? images[0]!,
       price,
       maxQuantity: stock,
+      originX: e.clientX,
+      originY: e.clientY,
     });
 
   const buyNow = async () => {

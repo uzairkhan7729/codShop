@@ -5,6 +5,7 @@ import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
 import { apiDelete, apiFetch, apiPost, apiPut, FetchError } from '@/lib/fetcher';
 import { type GuestCartItem, useGuestCart } from '@/stores/cart-store';
+import { useCartUI } from '@/stores/cart-ui-store';
 import type { CartView } from '@/server/services/cart.service';
 
 /** Server cart query (only when authenticated). */
@@ -35,13 +36,22 @@ export interface AddToCartArgs {
   image: string | null;
   price: number;
   maxQuantity: number;
+  /** Click coordinates — used to launch the fly-to-cart animation. */
+  originX?: number;
+  originY?: number;
 }
 
-/** Add-to-cart that targets the server cart when logged in, else the guest store. */
+/**
+ * Add-to-cart with the full UX: fly-to-cart animation, cart-icon pulse,
+ * UNDO toast, and the mini-drawer sliding in shortly after. Targets the server
+ * cart when logged in, else the guest store.
+ */
 export function useAddToCart() {
   const { status } = useSession();
   const queryClient = useQueryClient();
   const addGuest = useGuestCart((s) => s.addItem);
+  const removeGuest = useGuestCart((s) => s.removeItem);
+  const { launchFlight, bump, openDrawer } = useCartUI();
 
   return useMutation({
     mutationFn: async (args: AddToCartArgs) => {
@@ -65,9 +75,35 @@ export function useAddToCart() {
       addGuest(item);
       return null;
     },
-    onSuccess: () => {
+    onMutate: (args) => {
+      // Fire the visual immediately (optimistic), before the request resolves.
+      if (args.image && args.originX != null && args.originY != null) {
+        launchFlight(args.image, args.originX, args.originY);
+      }
+    },
+    onSuccess: (data, args) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
-      toast.success('Added to cart');
+      bump();
+      const undo = () => {
+        if (status === 'authenticated' && data) {
+          const line = data.items.find(
+            (i) => i.productId === args.productId && i.variantId === (args.variantId ?? null),
+          );
+          if (line) {
+            apiDelete<CartView>(`/api/cart/items/${line.id}`)
+              .then(() => queryClient.invalidateQueries({ queryKey: ['cart'] }))
+              .catch(() => undefined);
+          }
+        } else {
+          removeGuest(args.productId, args.variantId ?? null);
+        }
+      };
+      toast.success(`${args.name} added to cart`, {
+        action: { label: 'Undo', onClick: undo },
+        duration: 3000,
+      });
+      // Slide the mini-cart in once the flight has landed.
+      setTimeout(() => openDrawer(), 900);
     },
     onError: (err) => {
       toast.error(err instanceof FetchError ? err.message : 'Could not add to cart');

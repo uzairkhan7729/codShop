@@ -1,14 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
 import { Heart, LogOut, Menu, Search, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCartCount } from '@/hooks/use-cart';
+import { useCartUI } from '@/stores/cart-ui-store';
 import { Logo } from '@/components/storefront/logo';
 import { cn } from '@/lib/utils';
 
@@ -20,8 +21,16 @@ export function Navbar() {
   const router = useRouter();
   const { data: session } = useSession();
   const count = useCartCount();
+  const { openDrawer, pulse } = useCartUI();
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const cartControls = useAnimationControls();
+
+  // Bounce the cart icon whenever an item is added (pulse increments).
+  useEffect(() => {
+    if (pulse === 0) return;
+    cartControls.start({ scale: [1, 1.35, 0.9, 1], rotate: [0, -10, 8, 0], transition: { duration: 0.5 } });
+  }, [pulse, cartControls]);
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,24 +62,29 @@ export function Navbar() {
             </Button>
           </Link>
 
-          <Link href="/cart" aria-label={`Cart with ${count} items`} className="relative">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
-              <AnimatePresence>
-                {count > 0 && (
-                  <motion.span
-                    key={count}
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    exit={{ scale: 0 }}
-                    className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-foreground"
-                  >
-                    {count}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </Button>
-          </Link>
+          <motion.button
+            id="cart-icon"
+            animate={cartControls}
+            onClick={openDrawer}
+            aria-label={`Open cart, ${count} items`}
+            className="relative inline-flex h-10 w-10 items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            <AnimatePresence>
+              {count > 0 && (
+                <motion.span
+                  key={count}
+                  initial={{ scale: 0, y: -4 }}
+                  animate={{ scale: [0, 1.4, 1], y: 0 }}
+                  exit={{ scale: 0 }}
+                  transition={{ duration: 0.35 }}
+                  className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[11px] font-bold text-accent-foreground"
+                >
+                  {count}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
 
           {session?.user ? (
             <div className="flex items-center gap-1">
