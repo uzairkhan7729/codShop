@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, Info } from 'lucide-react';
 import type { Address } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -252,13 +252,25 @@ function PaymentForm({ orderId }: { orderId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {/* Test-mode notice */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+        <p className="flex items-center gap-2 font-semibold">
+          <Info className="h-4 w-4" /> Test mode — no real charge
+        </p>
+        <p className="mt-1">You can safely complete this purchase with a Stripe test card:</p>
+        <ul className="mt-2 space-y-0.5 font-mono text-xs">
+          <li>Card&nbsp;&nbsp;&nbsp;<strong>4242 4242 4242 4242</strong></li>
+          <li>Expiry&nbsp;any future date (e.g. 12/34)</li>
+          <li>CVC&nbsp;&nbsp;&nbsp;&nbsp;any 3 digits&nbsp;&nbsp;·&nbsp;&nbsp;ZIP any</li>
+        </ul>
+      </div>
+
       <PaymentElement />
       <motion.div whileTap={{ scale: 0.98 }}>
         <Button type="submit" variant="brand" size="lg" className="w-full" disabled={!stripe || submitting}>
           {submitting ? 'Processing…' : 'Place order'}
         </Button>
       </motion.div>
-      <p className="text-center text-xs text-muted-foreground">Test card: 4242 4242 4242 4242 · any future date · any CVC</p>
     </form>
   );
 }
