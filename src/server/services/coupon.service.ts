@@ -1,7 +1,21 @@
-import type { Coupon } from '@prisma/client';
+import type { Coupon, CouponType } from '@prisma/client';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
-import type { ICouponRepository } from '@/server/repositories';
+import type { ICouponRepository, Paginated, PaginationParams } from '@/server/repositories';
 import { getDiscountStrategy } from './discounts/discount-strategy';
+
+export interface CouponWriteInput {
+  code: string;
+  description?: string;
+  type: CouponType;
+  value: number;
+  minPurchase?: number;
+  maxDiscount?: number;
+  usageLimit?: number;
+  usageLimitPerUser?: number;
+  isActive?: boolean;
+  startsAt?: Date;
+  expiresAt?: Date;
+}
 
 export interface CouponValidation {
   coupon: Coupon;
@@ -58,5 +72,42 @@ export class CouponService {
   async redeem(couponId: string, userId: string, orderId: string): Promise<void> {
     await this.coupons.recordRedemption(couponId, userId, orderId);
     await this.coupons.incrementUsage(couponId);
+  }
+
+  // ───────────── Admin operations ─────────────
+
+  list(pagination: PaginationParams): Promise<Paginated<Coupon>> {
+    return this.coupons.findMany(pagination);
+  }
+
+  create(input: CouponWriteInput): Promise<Coupon> {
+    return this.coupons.create({
+      code: input.code,
+      description: input.description,
+      type: input.type,
+      value: input.value,
+      minPurchase: input.minPurchase ?? 0,
+      maxDiscount: input.maxDiscount,
+      usageLimit: input.usageLimit,
+      usageLimitPerUser: input.usageLimitPerUser ?? 1,
+      isActive: input.isActive ?? true,
+      startsAt: input.startsAt,
+      expiresAt: input.expiresAt,
+    });
+  }
+
+  async update(id: string, input: Partial<CouponWriteInput>): Promise<Coupon> {
+    const existing = await this.coupons.findById(id);
+    if (!existing) throw new NotFoundError('Coupon not found', 'COUPON_NOT_FOUND');
+    return this.coupons.update(id, {
+      ...input,
+      ...(input.code ? { code: input.code.toUpperCase() } : {}),
+    });
+  }
+
+  async delete(id: string): Promise<void> {
+    const existing = await this.coupons.findById(id);
+    if (!existing) throw new NotFoundError('Coupon not found', 'COUPON_NOT_FOUND');
+    await this.coupons.delete(id);
   }
 }

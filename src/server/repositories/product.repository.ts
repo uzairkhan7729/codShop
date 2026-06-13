@@ -19,14 +19,46 @@ export interface IProductRepository {
   findByIds(ids: string[]): Promise<Product[]>;
   findRelated(productId: string, categoryId: string, limit: number): Promise<Product[]>;
   listBrands(categoryId?: string): Promise<string[]>;
+  findManyAdmin(filters: ProductFilters, pagination: PaginationParams): Promise<Paginated<ProductWithRelations>>;
   create(data: Prisma.ProductCreateInput): Promise<Product>;
+  /** Create a product and (optionally) replace its variant set in one call. */
+  createWithVariants(data: ProductWriteInput): Promise<ProductWithRelations>;
   update(id: string, data: Prisma.ProductUpdateInput): Promise<Product>;
+  updateWithVariants(id: string, data: Partial<ProductWriteInput>): Promise<ProductWithRelations>;
   delete(id: string): Promise<void>;
   /** Atomically decrement stock only if enough is available. Returns updated count or null if it failed. */
   decrementStock(productId: string, quantity: number): Promise<number | null>;
   incrementStock(productId: string, quantity: number): Promise<number>;
   setStock(productId: string, quantity: number): Promise<number>;
   lowStock(threshold?: number): Promise<Product[]>;
+}
+
+/** Shape used by admin create/update (variants handled as a child collection). */
+export interface ProductVariantInput {
+  sku: string;
+  size?: string;
+  color?: string;
+  price?: number;
+  stock?: number;
+  image?: string;
+}
+export interface ProductWriteInput {
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  comparePrice?: number;
+  sku: string;
+  brand?: string;
+  images: string[];
+  categoryId: string;
+  stock?: number;
+  lowStockThreshold?: number;
+  isActive?: boolean;
+  isFeatured?: boolean;
+  metaTitle?: string;
+  metaDescription?: string;
+  variants?: ProductVariantInput[];
 }
 
 function buildWhere(filters: ProductFilters): Prisma.ProductWhereInput {
@@ -125,12 +157,78 @@ export class ProductRepository implements IProductRepository {
     return rows.map((r) => r.brand).filter((b): b is string => Boolean(b)).sort();
   }
 
+  async findManyAdmin(
+    filters: ProductFilters,
+    pagination: PaginationParams,
+  ): Promise<Paginated<ProductWithRelations>> {
+    // Admin listing: same filters but does not force isActive.
+    const where = buildWhere(filters);
+    const [items, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: { category: true, variants: true },
+        orderBy: buildOrderBy(filters.sort),
+        skip: (pagination.page - 1) * pagination.pageSize,
+        take: pagination.pageSize,
+      }),
+      prisma.product.count({ where }),
+    ]);
+    return toPaginated(items, total, pagination);
+  }
+
   create(data: Prisma.ProductCreateInput): Promise<Product> {
     return prisma.product.create({ data });
   }
 
+  createWithVariants(data: ProductWriteInput): Promise<ProductWithRelations> {
+    return prisma.product.create({
+      data: {
+        name: data.name,
+        slug: data.slug,
+        description: data.description,
+        price: data.price,
+        comparePrice: data.comparePrice,
+        sku: data.sku,
+        brand: data.brand,
+        images: data.images,
+        categoryId: data.categoryId,
+        stock: data.stock ?? 0,
+        lowStockThreshold: data.lowStockThreshold ?? 5,
+        isActive: data.isActive ?? true,
+        isFeatured: data.isFeatured ?? false,
+        metaTitle: data.metaTitle,
+        metaDescription: data.metaDescription,
+        ...(data.variants && data.variants.length
+          ? { variants: { create: data.variants.map((v) => ({ ...v })) } }
+          : {}),
+      },
+      include: { category: true, variants: true },
+    });
+  }
+
   update(id: string, data: Prisma.ProductUpdateInput): Promise<Product> {
     return prisma.product.update({ where: { id }, data });
+  }
+
+  async updateWithVariants(
+    id: string,
+    data: Partial<ProductWriteInput>,
+  ): Promise<ProductWithRelations> {
+    const { variants, categoryId, ...scalars } = data;
+    // Replace the variant set when provided (delete-then-create keeps it simple
+    // and avoids orphaned variants).
+    if (variants) {
+      await prisma.productVariant.deleteMany({ where: { productId: id } });
+    }
+    return prisma.product.update({
+      where: { id },
+      data: {
+        ...scalars,
+        ...(categoryId ? { categoryId } : {}),
+        ...(variants ? { variants: { create: variants.map((v) => ({ ...v })) } } : {}),
+      },
+      include: { category: true, variants: true },
+    });
   }
 
   async delete(id: string): Promise<void> {

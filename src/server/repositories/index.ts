@@ -5,6 +5,7 @@
  * abstractions (the I* interfaces) via the container, never concrete classes
  * or Prisma itself — this is the Dependency Inversion seam.
  */
+import { AnalyticsRepository, type IAnalyticsRepository } from './analytics.repository';
 import { CartRepository, type ICartRepository } from './cart.repository';
 import { CategoryRepository, type ICategoryRepository } from './category.repository';
 import { CouponRepository, type ICouponRepository } from './coupon.repository';
@@ -14,6 +15,7 @@ import { ProductRepository, type IProductRepository } from './product.repository
 import { ReviewRepository, type IReviewRepository } from './review.repository';
 import { SessionRepository, type ISessionRepository } from './session.repository';
 import { UserRepository, type IUserRepository } from './user.repository';
+import { WishlistRepository, type IWishlistRepository } from './wishlist.repository';
 
 export interface RepositoryContainer {
   products: IProductRepository;
@@ -25,6 +27,8 @@ export interface RepositoryContainer {
   coupons: ICouponRepository;
   categories: ICategoryRepository;
   sessions: ISessionRepository;
+  wishlist: IWishlistRepository;
+  analytics: IAnalyticsRepository;
 }
 
 const globalForRepos = globalThis as unknown as { repositories?: RepositoryContainer };
@@ -40,6 +44,8 @@ export const repositories: RepositoryContainer =
     coupons: new CouponRepository(),
     categories: new CategoryRepository(),
     sessions: new SessionRepository(),
+    wishlist: new WishlistRepository(),
+    analytics: new AnalyticsRepository(),
   };
 
 if (process.env.NODE_ENV !== 'production') {
@@ -52,7 +58,18 @@ export type { ICategoryRepository, CategoryWithChildren } from './category.repos
 export type { ICouponRepository } from './coupon.repository';
 export type { IOrderRepository } from './order.repository';
 export type { IPaymentRepository } from './payment.repository';
-export type { IProductRepository } from './product.repository';
+export type {
+  IProductRepository,
+  ProductWriteInput,
+  ProductVariantInput,
+} from './product.repository';
 export type { IReviewRepository, RatingAggregate } from './review.repository';
 export type { ISessionRepository } from './session.repository';
 export type { IUserRepository } from './user.repository';
+export type { IWishlistRepository, WishlistEntry } from './wishlist.repository';
+export type {
+  IAnalyticsRepository,
+  RevenuePoint,
+  TopProduct,
+  StatusBucket,
+} from './analytics.repository';

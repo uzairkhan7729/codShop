@@ -10,6 +10,7 @@ import { cache } from '@/lib/cache';
 import { paymentGateway } from '@/server/payments';
 import { repositories } from '@/server/repositories';
 
+import { AnalyticsService } from './analytics.service';
 import { AuthService } from './auth.service';
 import { CartService } from './cart.service';
 import { CategoryService } from './category.service';
@@ -20,6 +21,7 @@ import { OrderService } from './order.service';
 import { PaymentService } from './payment.service';
 import { ProductService } from './product.service';
 import { ReviewService } from './review.service';
+import { WishlistService } from './wishlist.service';
 
 export interface ServiceContainer {
   auth: AuthService;
@@ -32,6 +34,8 @@ export interface ServiceContainer {
   orders: OrderService;
   payments: PaymentService;
   reviews: ReviewService;
+  wishlist: WishlistService;
+  analytics: AnalyticsService;
 }
 
 function build(): ServiceContainer {
@@ -56,6 +60,8 @@ function build(): ServiceContainer {
   const paymentService = new PaymentService(paymentGateway, r.payments, r.orders, orderService);
   const reviewService = new ReviewService(r.reviews, r.products, productService);
   const authService = new AuthService(r.users, r.sessions);
+  const wishlistService = new WishlistService(r.wishlist, r.products);
+  const analyticsService = new AnalyticsService(r.analytics, r.orders, r.users, r.products);
 
   return {
     auth: authService,
@@ -68,6 +74,8 @@ function build(): ServiceContainer {
     orders: orderService,
     payments: paymentService,
     reviews: reviewService,
+    wishlist: wishlistService,
+    analytics: analyticsService,
   };
 }
 

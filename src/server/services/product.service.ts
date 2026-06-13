@@ -8,6 +8,7 @@ import type {
   PaginationParams,
   ProductFilters,
   ProductWithRelations,
+  ProductWriteInput,
 } from '@/server/repositories';
 
 export interface ProductDetail {
@@ -86,6 +87,36 @@ export class ProductService {
 
   async listBrands(categoryId?: string): Promise<string[]> {
     return this.products.listBrands(categoryId);
+  }
+
+  // ───────────── Admin operations ─────────────
+
+  listForAdmin(
+    filters: ProductFilters,
+    pagination: PaginationParams,
+  ): Promise<Paginated<ProductWithRelations>> {
+    return this.products.findManyAdmin(filters, pagination);
+  }
+
+  async createProduct(input: ProductWriteInput): Promise<ProductWithRelations> {
+    const product = await this.products.createWithVariants(input);
+    await this.invalidate();
+    return product;
+  }
+
+  async updateProduct(id: string, input: Partial<ProductWriteInput>): Promise<ProductWithRelations> {
+    const existing = await this.products.findById(id);
+    if (!existing) throw new NotFoundError('Product not found', 'PRODUCT_NOT_FOUND');
+    const product = await this.products.updateWithVariants(id, input);
+    await this.invalidate();
+    return product;
+  }
+
+  async deleteProduct(id: string): Promise<void> {
+    const existing = await this.products.findById(id);
+    if (!existing) throw new NotFoundError('Product not found', 'PRODUCT_NOT_FOUND');
+    await this.products.delete(id);
+    await this.invalidate();
   }
 
   /** Invalidate listing + detail caches after any mutation (Module 10). */
