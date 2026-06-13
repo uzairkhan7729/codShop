@@ -1,0 +1,44 @@
+# Render deployment blueprint.
+# A single full-stack Next.js web service (storefront + admin + API routes),
+# backed by MongoDB Atlas (set DATABASE_URL manually) and Render Redis.
+services:
+  - type: web
+    name: noon-commerce
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # set to your MongoDB Atlas URI in the dashboard
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          name: noon-commerce-redis
+          type: redis
+          property: connectionString
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+
+  - type: redis
+    name: noon-commerce-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: [] # only accessible from Render services
