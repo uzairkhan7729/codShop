@@ -95,7 +95,7 @@ export const addressSchema = z.object({
   city: z.string().min(1),
   state: z.string().min(1),
   postalCode: z.string().min(1),
-  country: z.string().min(2).default('AE'),
+  country: z.string().min(2).default('US'),
   isDefault: z.boolean().default(false),
 });
 

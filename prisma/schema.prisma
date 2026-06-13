@@ -130,7 +130,7 @@ model Address {
   city       String
   state      String
   postalCode String
-  country    String      @default("AE")
+  country    String      @default("US")
   isDefault  Boolean     @default(false)
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt

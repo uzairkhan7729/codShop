@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiDelete, apiFetch, apiPost, FetchError } from '@/lib/fetcher';
+import { CountrySelect, PhoneInput } from '@/components/address-fields';
 import { toast } from 'sonner';
 
-const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'AE', isDefault: false };
+const EMPTY = { fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'US', isDefault: false };
 
 export default function AddressesPage() {
   const queryClient = useQueryClient();
@@ -53,14 +54,22 @@ export default function AddressesPage() {
             className="mb-6 grid grid-cols-2 gap-3 overflow-hidden rounded-lg border p-4"
           >
             {([
-              ['fullName', 'Full name'], ['phone', 'Phone'], ['line1', 'Address line 1'], ['line2', 'Address line 2'],
-              ['city', 'City'], ['state', 'State'], ['postalCode', 'Postal code'], ['country', 'Country'],
+              ['fullName', 'Full name'], ['line1', 'Address line 1'], ['line2', 'Address line 2'],
+              ['city', 'City'], ['state', 'State'], ['postalCode', 'Postal code'],
             ] as const).map(([key, label]) => (
               <div key={key} className="space-y-1.5">
                 <Label>{label}</Label>
                 <Input value={form[key]} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} />
               </div>
             ))}
+            <div className="space-y-1.5">
+              <Label>Phone</Label>
+              <PhoneInput value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Country</Label>
+              <CountrySelect value={form.country} onChange={(v) => setForm((f) => ({ ...f, country: v }))} />
+            </div>
             <label className="col-span-2 flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))} />
               Set as default

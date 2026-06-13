@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { useServerCart } from '@/hooks/use-cart';
 import { useGuestCart } from '@/stores/cart-store';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CountrySelect, PhoneInput } from '@/components/address-fields';
 import { apiFetch, apiPost, FetchError } from '@/lib/fetcher';
 import { getStripe } from '@/lib/stripe-client';
 import { calculatePricing } from '@/lib/pricing';
@@ -27,7 +28,7 @@ interface NewAddress {
   city: string; state: string; postalCode: string; country: string;
 }
 const EMPTY_ADDRESS: NewAddress = {
-  fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'AE',
+  fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'US',
 };
 
 interface SummaryLine { id: string; name: string; image: string | null; unitPrice: number; quantity: number; lineTotal: number }
@@ -226,13 +227,19 @@ export default function CheckoutPage() {
               {useNew && (
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Full name" value={newAddress.fullName} onChange={(v) => setNewAddress((s) => ({ ...s, fullName: v }))} />
-                  <Field label="Phone" value={newAddress.phone} onChange={(v) => setNewAddress((s) => ({ ...s, phone: v }))} />
+                  <div className="space-y-1.5">
+                    <Label>Phone</Label>
+                    <PhoneInput value={newAddress.phone} onChange={(v) => setNewAddress((s) => ({ ...s, phone: v }))} />
+                  </div>
                   <Field className="col-span-2" label="Address line 1" value={newAddress.line1} onChange={(v) => setNewAddress((s) => ({ ...s, line1: v }))} />
                   <Field className="col-span-2" label="Address line 2 (optional)" value={newAddress.line2 ?? ''} onChange={(v) => setNewAddress((s) => ({ ...s, line2: v }))} />
                   <Field label="City" value={newAddress.city} onChange={(v) => setNewAddress((s) => ({ ...s, city: v }))} />
                   <Field label="State" value={newAddress.state} onChange={(v) => setNewAddress((s) => ({ ...s, state: v }))} />
                   <Field label="Postal code" value={newAddress.postalCode} onChange={(v) => setNewAddress((s) => ({ ...s, postalCode: v }))} />
-                  <Field label="Country" value={newAddress.country} onChange={(v) => setNewAddress((s) => ({ ...s, country: v }))} />
+                  <div className="space-y-1.5">
+                    <Label>Country</Label>
+                    <CountrySelect value={newAddress.country} onChange={(v) => setNewAddress((s) => ({ ...s, country: v }))} />
+                  </div>
                   {!isGuest && addresses && addresses.length > 0 && (
                     <Button variant="ghost" size="sm" className="col-span-2 justify-self-start" onClick={() => setUseNew(false)}>Use a saved address</Button>
                   )}
@@ -388,7 +395,7 @@ function PaymentForm({ orderId, orderNumber, email }: { orderId: string; orderNu
         </ul>
       </div>
 
-      <PaymentElement />
+      <PaymentElement options={{ defaultValues: { billingDetails: { address: { country: 'US' } } } }} />
       <motion.div whileTap={{ scale: 0.98 }}>
         <Button type="submit" variant="brand" size="lg" className="w-full" disabled={!stripe || submitting}>
           {submitting ? 'Processing…' : 'Place order'}
