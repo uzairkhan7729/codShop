@@ -12,8 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useServerCart } from '@/hooks/use-cart';
+import { useGuestCart } from '@/stores/cart-store';
 import { apiFetch, apiPost, FetchError } from '@/lib/fetcher';
 import { getStripe } from '@/lib/stripe-client';
+import { calculatePricing } from '@/lib/pricing';
 import { cn, formatCurrency } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -23,17 +25,25 @@ interface NewAddress {
   fullName: string; phone: string; line1: string; line2?: string;
   city: string; state: string; postalCode: string; country: string;
 }
-
 const EMPTY_ADDRESS: NewAddress = {
   fullName: '', phone: '', line1: '', line2: '', city: '', state: '', postalCode: '', country: 'AE',
 };
 
+interface SummaryLine { id: string; name: string; image: string | null; unitPrice: number; quantity: number; lineTotal: number }
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { status } = useSession();
-  const { data: cart, isLoading } = useServerCart();
-  const [step, setStep] = useState(0);
+  const isGuest = status === 'unauthenticated';
 
+  const { data: serverCart, isLoading: serverLoading } = useServerCart();
+  const guestItems = useGuestCart((s) => s.items);
+  const guestSubtotal = useGuestCart((s) => s.subtotal());
+  const guestClear = useGuestCart((s) => s.clear);
+
+  const [step, setStep] = useState(0);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [addressId, setAddressId] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState<NewAddress>(EMPTY_ADDRESS);
   const [useNew, setUseNew] = useState(false);
@@ -49,18 +59,33 @@ export default function CheckoutPage() {
   });
 
   useEffect(() => {
+    if (isGuest) { setUseNew(true); return; }
     if (addresses && addresses.length > 0 && !addressId && !useNew) {
       setAddressId(addresses.find((a) => a.isDefault)?.id ?? addresses[0]!.id);
     } else if (addresses && addresses.length === 0) {
       setUseNew(true);
     }
-  }, [addresses, addressId, useNew]);
+  }, [addresses, addressId, useNew, isGuest]);
 
   const stripePromise = useMemo(() => getStripe(), []);
 
-  if (status === 'unauthenticated') { router.push('/login?callbackUrl=/checkout'); return null; }
-  if (isLoading) return <div className="container py-10 text-center text-muted-foreground">Loading…</div>;
-  if (!cart || cart.items.length === 0) {
+  // Unified cart view (server or guest)
+  const lines: SummaryLine[] = useMemo(
+    () =>
+      isGuest
+        ? guestItems.map((i) => ({
+            id: `${i.productId}-${i.variantId}`, name: i.name, image: i.image, unitPrice: i.price, quantity: i.quantity, lineTotal: i.price * i.quantity,
+          }))
+        : (serverCart?.items ?? []),
+    [isGuest, guestItems, serverCart],
+  );
+  const subtotal = isGuest ? guestSubtotal : (serverCart?.pricing.subtotal ?? 0);
+  const pricing = isGuest ? calculatePricing(guestSubtotal, 0, shippingMethod) : serverCart?.pricing;
+
+  if (status === 'loading' || (!isGuest && serverLoading)) {
+    return <div className="container py-10 text-center text-muted-foreground">Loading…</div>;
+  }
+  if (lines.length === 0) {
     return (
       <div className="container py-20 text-center">
         <p className="mb-4 text-muted-foreground">Your cart is empty.</p>
@@ -69,14 +94,23 @@ export default function CheckoutPage() {
     );
   }
 
-  /** Create the order + payment intent when advancing to the payment step. */
   const startPayment = async () => {
     setCreating(true);
     try {
-      const body = useNew
-        ? { shippingAddress: newAddress, shippingMethod }
-        : { addressId, shippingMethod };
-      const res = await apiPost<{ orderId: string; clientSecret: string | null }>('/api/checkout', body);
+      let res: { orderId: string; clientSecret: string | null };
+      if (isGuest) {
+        res = await apiPost('/api/checkout/guest', {
+          email,
+          name: name || undefined,
+          shippingAddress: newAddress,
+          shippingMethod,
+          items: guestItems.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
+        });
+        guestClear();
+      } else {
+        const body = useNew ? { shippingAddress: newAddress, shippingMethod } : { addressId, shippingMethod };
+        res = await apiPost('/api/checkout', body);
+      }
       setOrderId(res.orderId);
       setClientSecret(res.clientSecret);
       setStep(2);
@@ -87,13 +121,23 @@ export default function CheckoutPage() {
     }
   };
 
-  const addressValid = useNew
-    ? newAddress.fullName && newAddress.phone && newAddress.line1 && newAddress.city && newAddress.state && newAddress.postalCode
-    : Boolean(addressId);
+  const addressValid =
+    (useNew
+      ? newAddress.fullName && newAddress.phone && newAddress.line1 && newAddress.city && newAddress.state && newAddress.postalCode
+      : Boolean(addressId)) && (!isGuest || /.+@.+\..+/.test(email));
 
   return (
     <div className="container max-w-4xl py-6">
-      <h1 className="mb-6 text-2xl font-bold">Checkout</h1>
+      <h1 className="mb-2 text-2xl font-bold">Checkout</h1>
+      {isGuest && (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Checking out as a guest.{' '}
+          <button onClick={() => router.push('/login?callbackUrl=/checkout')} className="font-medium text-primary hover:underline">
+            Sign in
+          </button>{' '}
+          for faster checkout and order tracking.
+        </p>
+      )}
 
       {/* Progress */}
       <div className="mb-8 flex items-center">
@@ -118,11 +162,22 @@ export default function CheckoutPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
         <div>
-          {/* Step 1: Address */}
+          {/* Step 1: Contact + Address */}
           {step === 0 && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
+              {isGuest && (
+                <div className="space-y-3 rounded-lg border p-4">
+                  <h2 className="text-lg font-semibold">Contact</h2>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Email" value={email} onChange={setEmail} type="email" />
+                    <Field label="Name (optional)" value={name} onChange={setName} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">We&apos;ll send your order confirmation here.</p>
+                </div>
+              )}
+
               <h2 className="text-lg font-semibold">Shipping address</h2>
-              {addresses && addresses.length > 0 && !useNew && (
+              {!isGuest && addresses && addresses.length > 0 && !useNew && (
                 <div className="space-y-2">
                   {addresses.map((a) => (
                     <label key={a.id} className={cn('flex cursor-pointer gap-3 rounded-lg border p-3', addressId === a.id && 'border-primary bg-primary/5')}>
@@ -146,7 +201,7 @@ export default function CheckoutPage() {
                   <Field label="State" value={newAddress.state} onChange={(v) => setNewAddress((s) => ({ ...s, state: v }))} />
                   <Field label="Postal code" value={newAddress.postalCode} onChange={(v) => setNewAddress((s) => ({ ...s, postalCode: v }))} />
                   <Field label="Country" value={newAddress.country} onChange={(v) => setNewAddress((s) => ({ ...s, country: v }))} />
-                  {addresses && addresses.length > 0 && (
+                  {!isGuest && addresses && addresses.length > 0 && (
                     <Button variant="ghost" size="sm" className="col-span-2 justify-self-start" onClick={() => setUseNew(false)}>Use a saved address</Button>
                   )}
                 </div>
@@ -160,8 +215,8 @@ export default function CheckoutPage() {
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <h2 className="text-lg font-semibold">Shipping method</h2>
               {([
-                { id: 'STANDARD', label: 'Standard', desc: '2–4 business days', price: cart.pricing.taxableBase >= 200 ? 0 : 15 },
-                { id: 'EXPRESS', label: 'Express', desc: 'Next business day', price: (cart.pricing.taxableBase >= 200 ? 0 : 15) + 25 },
+                { id: 'STANDARD', label: 'Standard', desc: '2–4 business days', price: subtotal >= 200 ? 0 : 15 },
+                { id: 'EXPRESS', label: 'Express', desc: 'Next business day', price: (subtotal >= 200 ? 0 : 15) + 25 },
               ] as const).map((m) => (
                 <label key={m.id} className={cn('flex cursor-pointer items-center justify-between rounded-lg border p-4', shippingMethod === m.id && 'border-primary bg-primary/5')}>
                   <div className="flex items-center gap-3">
@@ -189,7 +244,7 @@ export default function CheckoutPage() {
               ) : (
                 <div className="rounded-lg border bg-amber-50 p-4 text-sm text-amber-800">
                   Payments are not configured (missing Stripe key). Your order <strong>{orderId}</strong> was created as pending.
-                  <Button className="mt-3" onClick={() => router.push(`/account/orders`)}>View orders</Button>
+                  <Button className="mt-3" onClick={() => router.push('/products')}>Continue shopping</Button>
                 </div>
               )}
               <Button variant="ghost" size="sm" onClick={() => setStep(1)}>Back</Button>
@@ -200,30 +255,32 @@ export default function CheckoutPage() {
         {/* Order summary */}
         <div className="h-fit space-y-2 rounded-lg border p-4">
           <h2 className="font-semibold">Your order</h2>
-          {cart.items.map((i) => (
+          {lines.map((i) => (
             <div key={i.id} className="flex justify-between text-sm">
               <span className="line-clamp-1 text-muted-foreground">{i.name} ×{i.quantity}</span>
               <span>{formatCurrency(i.lineTotal)}</span>
             </div>
           ))}
-          <div className="border-t pt-2 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(cart.pricing.subtotal)}</span></div>
-            {cart.pricing.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-{formatCurrency(cart.pricing.discount)}</span></div>}
-            <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>{formatCurrency(cart.pricing.tax)}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{cart.pricing.shippingCost === 0 ? 'Free' : formatCurrency(cart.pricing.shippingCost)}</span></div>
-            <div className="mt-1 flex justify-between border-t pt-1 text-base font-bold"><span>Total</span><span>{formatCurrency(cart.pricing.total)}</span></div>
-          </div>
+          {pricing && (
+            <div className="border-t pt-2 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(pricing.subtotal)}</span></div>
+              {pricing.discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-{formatCurrency(pricing.discount)}</span></div>}
+              <div className="flex justify-between"><span className="text-muted-foreground">Tax</span><span>{formatCurrency(pricing.tax)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Shipping</span><span>{pricing.shippingCost === 0 ? 'Free' : formatCurrency(pricing.shippingCost)}</span></div>
+              <div className="mt-1 flex justify-between border-t pt-1 text-base font-bold"><span>Total</span><span>{formatCurrency(pricing.total)}</span></div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-function Field({ label, value, onChange, className }: { label: string; value: string; onChange: (v: string) => void; className?: string }) {
+function Field({ label, value, onChange, className, type = 'text' }: { label: string; value: string; onChange: (v: string) => void; className?: string; type?: string }) {
   return (
     <div className={cn('space-y-1.5', className)}>
       <Label>{label}</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} />
+      <Input type={type} value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
@@ -240,9 +297,7 @@ function PaymentForm({ orderId }: { orderId: string }) {
     setSubmitting(true);
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/checkout/success?orderId=${orderId}`,
-      },
+      confirmParams: { return_url: `${window.location.origin}/checkout/success?orderId=${orderId}` },
     });
     if (error) {
       toast.error(error.message ?? 'Payment failed. Please try again.');

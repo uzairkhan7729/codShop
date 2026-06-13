@@ -3,8 +3,9 @@ import { withAuth } from 'next-auth/middleware';
 
 /**
  * Route protection (Module 11). Uses the NextAuth JWT (HTTP-only cookie):
- *  - /admin/**          requires role ADMIN
- *  - /account, /checkout require any authenticated user
+ *  - /admin/**   requires role ADMIN
+ *  - /account/** requires any authenticated user
+ * /checkout is intentionally public to support guest checkout.
  * Unauthenticated users are redirected to /login with a callbackUrl.
  */
 export default withAuth(
@@ -28,5 +29,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/admin/:path*', '/account/:path*', '/checkout/:path*'],
+  matcher: ['/admin/:path*', '/account/:path*'],
 };

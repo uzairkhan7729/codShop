@@ -118,4 +118,24 @@ export class AuthService {
   async logout(userId: string): Promise<void> {
     await this.sessions.deleteAllForUser(userId);
   }
+
+  /**
+   * Find an existing user by email or create a lightweight "guest" account with
+   * a random password. Used by guest checkout so orders still have an owner and
+   * the customer can later register with the same email to claim their history.
+   */
+  async findOrCreateGuest(email: string, name?: string): Promise<User> {
+    const existing = await this.users.findByEmail(email);
+    if (existing) {
+      if (existing.isBlocked) throw new ForbiddenError('Your account has been suspended');
+      return existing;
+    }
+    const randomPassword = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+    return this.users.create({
+      name: name?.trim() || 'Guest',
+      email,
+      password: await hashPassword(randomPassword),
+      role: 'CUSTOMER',
+    });
+  }
 }

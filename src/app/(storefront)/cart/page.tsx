@@ -190,10 +190,13 @@ function GuestCartView() {
         </div>
 
         <Summary subtotal={subtotal} discount={0} tax={tax} shipping={shipping} total={total}>
-          <Button className="w-full" size="lg" variant="brand" onClick={() => router.push('/login?callbackUrl=/checkout')}>
-            Sign in to checkout
+          <Button className="w-full" size="lg" variant="brand" onClick={() => router.push('/checkout')}>
+            Checkout as guest
           </Button>
-          <p className="text-center text-xs text-muted-foreground">Your cart will be saved.</p>
+          <Button className="w-full" size="lg" variant="outline" onClick={() => router.push('/login?callbackUrl=/checkout')}>
+            Sign in for faster checkout
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">Coupons require an account.</p>
         </Summary>
       </div>
     </div>

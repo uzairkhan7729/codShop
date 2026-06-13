@@ -106,6 +106,23 @@ export const checkoutSchema = z.object({
   shippingMethod: z.enum(['STANDARD', 'EXPRESS']).default('STANDARD'),
 });
 
+export const guestCheckoutSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+  name: z.string().min(2).max(80).optional(),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS']).default('STANDARD'),
+  shippingAddress: addressSchema.omit({ type: true, isDefault: true }),
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        variantId: z.string().min(1).nullable().optional(),
+        quantity: z.number().int().min(1).max(99),
+      }),
+    )
+    .min(1, 'Your cart is empty')
+    .max(100),
+});
+
 export const reviewSchema = z.object({
   productId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
