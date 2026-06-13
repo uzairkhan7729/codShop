@@ -249,12 +249,9 @@ export class ProductRepository implements IProductRepository {
       where: { id: productId, stock: { gte: quantity } },
       data: { stock: { decrement: quantity } },
     });
-    if (result.count === 0) return null;
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-      select: { stock: true },
-    });
-    return product?.stock ?? 0;
+    // Single atomic write; the remaining count is not needed by callers, so we
+    // skip an extra read. Return null when the guard failed (not enough stock).
+    return result.count === 0 ? null : 0;
   }
 
   async incrementStock(productId: string, quantity: number): Promise<number> {

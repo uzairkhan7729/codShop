@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useQuery } from '@tanstack/react-query';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { motion } from 'framer-motion';
-import { Check, Info } from 'lucide-react';
+import { Check, Info, Loader2 } from 'lucide-react';
 import type { Address } from '@prisma/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +51,7 @@ export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const { data: addresses } = useQuery({
     queryKey: ['addresses'],
@@ -106,8 +107,11 @@ export default function CheckoutPage() {
     );
   }
 
-  const startPayment = async () => {
+  // Create the order + payment intent. Runs in the background on the payment
+  // step so the user sees progress instead of a blocked button.
+  const createIntent = async () => {
     setCreating(true);
+    setPaymentError(null);
     try {
       let res: { orderId: string; clientSecret: string | null };
       if (isGuest) {
@@ -125,12 +129,25 @@ export default function CheckoutPage() {
       }
       setOrderId(res.orderId);
       setClientSecret(res.clientSecret);
-      setStep(2);
     } catch (err) {
-      toast.error(err instanceof FetchError ? err.message : 'Could not start checkout');
+      setPaymentError(err instanceof FetchError ? err.message : 'Could not start checkout. Please try again.');
     } finally {
       setCreating(false);
     }
+  };
+
+  // Advance to the payment step immediately; create the intent if not already done.
+  const goToPayment = () => {
+    setStep(2);
+    if (!clientSecret && !orderId) void createIntent();
+  };
+
+  // Changing the shipping method invalidates any created intent (total changed).
+  const changeShipping = (method: 'STANDARD' | 'EXPRESS') => {
+    setShippingMethod(method);
+    setClientSecret(null);
+    setOrderId(null);
+    setPaymentError(null);
   };
 
   const addressValid =
@@ -232,7 +249,7 @@ export default function CheckoutPage() {
               ] as const).map((m) => (
                 <label key={m.id} className={cn('flex cursor-pointer items-center justify-between rounded-lg border p-4', shippingMethod === m.id && 'border-primary bg-primary/5')}>
                   <div className="flex items-center gap-3">
-                    <input type="radio" checked={shippingMethod === m.id} onChange={() => setShippingMethod(m.id)} />
+                    <input type="radio" checked={shippingMethod === m.id} onChange={() => changeShipping(m.id)} />
                     <div><p className="font-medium">{m.label}</p><p className="text-sm text-muted-foreground">{m.desc}</p></div>
                   </div>
                   <span className="font-semibold">{m.price === 0 ? 'Free' : formatCurrency(m.price)}</span>
@@ -240,7 +257,7 @@ export default function CheckoutPage() {
               ))}
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setStep(0)}>Back</Button>
-                <Button onClick={startPayment} disabled={creating}>{creating ? 'Preparing…' : 'Continue to payment'}</Button>
+                <Button onClick={goToPayment}>Continue to payment</Button>
               </div>
             </motion.div>
           )}
@@ -249,16 +266,44 @@ export default function CheckoutPage() {
           {step === 2 && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
               <h2 className="text-lg font-semibold">Payment</h2>
-              {clientSecret && orderId ? (
+
+              {/* Creating order + payment intent */}
+              {creating && (
+                <div className="space-y-4 rounded-lg border p-5">
+                  <div className="flex items-center gap-3 text-sm font-medium">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    Setting up secure payment…
+                  </div>
+                  <p className="text-xs text-muted-foreground">Reserving your items and preparing a secure card form. This takes a few seconds.</p>
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-11 w-full" />
+                </div>
+              )}
+
+              {/* Error */}
+              {!creating && paymentError && (
+                <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                  <p>{paymentError}</p>
+                  <Button variant="outline" size="sm" onClick={createIntent}>Try again</Button>
+                </div>
+              )}
+
+              {/* Ready — Stripe Elements */}
+              {!creating && clientSecret && orderId && (
                 <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
                   <PaymentForm orderId={orderId} />
                 </Elements>
-              ) : (
+              )}
+
+              {/* Order created but Stripe not configured */}
+              {!creating && !paymentError && orderId && !clientSecret && (
                 <div className="rounded-lg border bg-amber-50 p-4 text-sm text-amber-800">
                   Payments are not configured (missing Stripe key). Your order <strong>{orderId}</strong> was created as pending.
-                  <Button className="mt-3" onClick={() => router.push('/products')}>Continue shopping</Button>
+                  <Button className="mt-3" onClick={() => router.push('/track')}>Track your order</Button>
                 </div>
               )}
+
               <Button variant="ghost" size="sm" onClick={() => setStep(1)}>Back</Button>
             </motion.div>
           )}
