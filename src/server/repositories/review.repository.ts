@@ -16,6 +16,7 @@ export interface RatingAggregate {
 /** IReviewRepository — CRUD + ratings aggregation. */
 export interface IReviewRepository {
   findByProduct(productId: string, pagination: PaginationParams): Promise<Paginated<ReviewWithUser>>;
+  findById(id: string): Promise<Review | null>;
   findUserReviewForProduct(userId: string, productId: string): Promise<Review | null>;
   listByUser(userId: string): Promise<ReviewWithUser[]>;
   create(data: Prisma.ReviewCreateInput): Promise<Review>;
@@ -41,6 +42,10 @@ export class ReviewRepository implements IReviewRepository {
       prisma.review.count({ where }),
     ]);
     return toPaginated(items, total, pagination);
+  }
+
+  findById(id: string): Promise<Review | null> {
+    return prisma.review.findUnique({ where: { id } });
   }
 
   findUserReviewForProduct(userId: string, productId: string): Promise<Review | null> {
