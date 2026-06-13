@@ -31,16 +31,21 @@ export interface OrderAddressInput {
   country: string;
 }
 
-/** Allowed forward status transitions (status workflow). */
-const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
-  PENDING: ['PAID', 'CANCELLED'],
-  PAID: ['PROCESSING', 'CANCELLED', 'REFUNDED'],
-  PROCESSING: ['SHIPPED', 'CANCELLED', 'REFUNDED'],
-  SHIPPED: ['DELIVERED', 'REFUNDED'],
-  DELIVERED: ['REFUNDED'],
-  CANCELLED: [],
-  REFUNDED: [],
-};
+/** Fulfilment progression. Admins may jump forward (skip stages). */
+const STAGE_ORDER: OrderStatus[] = ['PENDING', 'PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+
+/**
+ * Whether `to` is a permitted transition from `from`:
+ *  - Cancelled/Refunded are terminal — nothing can transition out of them.
+ *  - Cancel/Refund is allowed from any active stage.
+ *  - Otherwise only forward moves along the progression (skips allowed).
+ */
+function canTransition(from: OrderStatus, to: OrderStatus): boolean {
+  if (from === to) return false;
+  if (from === 'CANCELLED' || from === 'REFUNDED') return false;
+  if (to === 'CANCELLED' || to === 'REFUNDED') return true;
+  return STAGE_ORDER.indexOf(to) > STAGE_ORDER.indexOf(from);
+}
 
 /**
  * OrderService — orchestrates checkout. Creates a PENDING order, reserves
@@ -204,9 +209,18 @@ export class OrderService {
     const order = await this.orders.findById(orderId);
     if (!order) throw new NotFoundError('Order not found', 'ORDER_NOT_FOUND');
 
-    if (!TRANSITIONS[order.status].includes(status)) {
+    if (status === order.status) {
+      // No-op (e.g. admin re-saved tracking info without changing the stage).
+      if (!extra?.trackingNumber && !extra?.carrier) return order;
+      return this.orders.updateStatus(orderId, status, {
+        ...(extra.trackingNumber ? { trackingNumber: extra.trackingNumber } : {}),
+        ...(extra.carrier ? { carrier: extra.carrier } : {}),
+      });
+    }
+
+    if (!canTransition(order.status, status)) {
       throw new BadRequestError(
-        `Cannot change status from ${order.status} to ${status}`,
+        `Cannot change status from ${order.status} to ${status}. Orders move forward through Pending → Paid → Processing → Shipped → Delivered (you can skip ahead), or be Cancelled/Refunded.`,
         'INVALID_STATUS_TRANSITION',
       );
     }
