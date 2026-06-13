@@ -3,7 +3,7 @@
  * cart, and order services all agree on totals.
  */
 export const PRICING = {
-  currency: 'AED',
+  currency: 'USD',
   /** VAT rate applied to the discounted subtotal. */
   taxRate: 0.05,
   /** Flat shipping fee below the free-shipping threshold. */

@@ -169,7 +169,7 @@ model Product {
   description      String
   price            Float
   comparePrice     Float? // original / "was" price for discount badge
-  currency         String   @default("AED")
+  currency         String   @default("USD")
   sku              String   @unique
   brand            String?
   images           String[] // ordered array of image URLs
@@ -335,7 +335,7 @@ model Payment {
   provider              PaymentProvider @default(STRIPE)
   status                PaymentStatus   @default(PENDING)
   amount                Float
-  currency              String          @default("AED")
+  currency              String          @default("USD")
   refundedAmount        Float           @default(0)
   stripePaymentIntentId String?         @unique
   stripeChargeId        String?
