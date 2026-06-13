@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, Star } from 'lucide-react';
 import { ProductCard, type ProductCardData } from '@/components/storefront/product-card';
+import { SortDropdown } from '@/components/storefront/sort-dropdown';
+import { FilterGroup } from '@/components/storefront/filter-group';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,16 +67,7 @@ function ProductsBrowser() {
           <Button variant="outline" size="sm" className="md:hidden" onClick={() => setFiltersOpen((o) => !o)}>
             <SlidersHorizontal className="h-4 w-4" /> Filters
           </Button>
-          <select
-            value={sort}
-            onChange={(e) => { setSort(e.target.value); setPage(1); }}
-            className="h-9 rounded-md border bg-background px-3 text-sm"
-            aria-label="Sort products"
-          >
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
+          <SortDropdown value={sort} options={SORTS} onChange={(v) => { setSort(v); setPage(1); }} />
         </div>
       </div>
 
@@ -82,23 +75,21 @@ function ProductsBrowser() {
         {/* Filters sidebar */}
         <motion.aside
           initial={false}
-          animate={{ height: filtersOpen || typeof window === 'undefined' ? 'auto' : 'auto' }}
-          className={cn('space-y-6', filtersOpen ? 'block' : 'hidden md:block')}
+          className={cn('space-y-2', filtersOpen ? 'block' : 'hidden md:block')}
         >
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">Price range</h3>
-            <div className="flex items-center gap-2">
+          <FilterGroup title="Price range">
+            <div className="flex items-center gap-2 py-1">
               <Input type="number" placeholder="Min" value={minPrice} onChange={(e) => { setMinPrice(e.target.value); setPage(1); }} className="h-9" />
               <span className="text-muted-foreground">–</span>
               <Input type="number" placeholder="Max" value={maxPrice} onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }} className="h-9" />
             </div>
-          </div>
-          <div>
-            <h3 className="mb-2 text-sm font-semibold">Rating</h3>
+          </FilterGroup>
+          <FilterGroup title="Rating">
             <div className="space-y-1">
               {[4, 3, 2].map((r) => (
-                <button
+                <motion.button
                   key={r}
+                  whileHover={{ x: 4 }}
                   onClick={() => { setMinRating(minRating === r ? undefined : r); setPage(1); }}
                   className={cn(
                     'flex w-full items-center gap-1 rounded-md px-2 py-1 text-sm',
@@ -109,10 +100,10 @@ function ProductsBrowser() {
                     <Star key={i} className={cn('h-3.5 w-3.5', i < r ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground')} />
                   ))}
                   <span className="ml-1">& up</span>
-                </button>
+                </motion.button>
               ))}
             </div>
-          </div>
+          </FilterGroup>
         </motion.aside>
 
         {/* Grid */}
