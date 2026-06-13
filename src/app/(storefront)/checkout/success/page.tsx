@@ -40,9 +40,12 @@ function SuccessInner() {
         confirmation email is on its way.
       </p>
       <div className="flex gap-3">
-        <Link href="/account/orders"><Button variant="brand">View my orders</Button></Link>
+        <Link href="/track"><Button variant="brand">Track your order</Button></Link>
         <Link href="/products"><Button variant="outline">Continue shopping</Button></Link>
       </div>
+      <p className="text-xs text-muted-foreground">
+        No account needed to track — just your order number and email. Signed-in customers can also see all orders under My Account.
+      </p>
     </div>
   );
 }

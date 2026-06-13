@@ -52,7 +52,7 @@ export function Navbar() {
             <Truck className="h-3.5 w-3.5" /> Free shipping on orders over $200 · 30-day easy returns
           </span>
           <div className="flex items-center gap-4">
-            <Link href="/account/orders" className="hover:underline">Track Order</Link>
+            <Link href="/track" className="hover:underline">Track Order</Link>
             <Link href="/products" className="hidden hover:underline sm:inline">Help</Link>
             <Link href="/admin/dashboard" className="hidden hover:underline md:inline">Sell on CodShop</Link>
           </div>
