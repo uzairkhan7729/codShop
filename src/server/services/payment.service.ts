@@ -1,6 +1,6 @@
 import { BadRequestError, NotFoundError, PaymentError } from '@/lib/errors';
 import { PRICING } from '@/lib/pricing';
-import type { IOrderRepository, IPaymentRepository } from '@/server/repositories';
+import type { IOrderRepository, IPaymentRepository, OrderWithRelations } from '@/server/repositories';
 import type { IPaymentGateway, NormalizedWebhookEvent } from '@/server/payments';
 import type { OrderService } from './order.service';
 
@@ -23,9 +23,17 @@ export class PaymentService {
     private readonly orderService: OrderService,
   ) {}
 
-  /** Create (or reuse) a payment intent for a PENDING order and return its client secret. */
-  async initiatePayment(orderId: string, userId: string): Promise<InitiatePaymentResult> {
-    const order = await this.orders.findById(orderId);
+  /**
+   * Create (or reuse) a payment intent for a PENDING order and return its client
+   * secret. Accepts an optional preloaded order to avoid a redundant DB read
+   * right after order creation.
+   */
+  async initiatePayment(
+    orderId: string,
+    userId: string,
+    preloaded?: OrderWithRelations,
+  ): Promise<InitiatePaymentResult> {
+    const order = preloaded && preloaded.id === orderId ? preloaded : await this.orders.findById(orderId);
     if (!order) throw new NotFoundError('Order not found', 'ORDER_NOT_FOUND');
     if (order.userId !== userId) throw new BadRequestError('Order does not belong to you');
     if (order.status !== 'PENDING') {

@@ -18,7 +18,7 @@ export const POST = route(async (request: Request) => {
     shippingMethod: input.shippingMethod,
   });
 
-  const payment = await services.payments.initiatePayment(order.id, user.id);
+  const payment = await services.payments.initiatePayment(order.id, user.id, order);
 
   return ok(
     {
