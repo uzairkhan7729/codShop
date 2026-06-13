@@ -1,27 +1,44 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
-import {
-  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer,
-  Tooltip, XAxis, YAxis,
-} from 'recharts';
 import { DollarSign, Package, ShoppingCart, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { OrderStatusBadge } from '@/components/order-status-badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/lib/fetcher';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import type { DashboardStats } from '@/server/services/analytics.service';
 
-const PIE_COLORS = ['#3866df', '#22c55e', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4', '#64748b'];
+// Charts pull in Recharts (heavy) — load them lazily so the KPIs + tables
+// render immediately and the chart bundle streams in behind a skeleton.
+const DashboardCharts = dynamic(() => import('@/components/admin/dashboard-charts'), {
+  ssr: false,
+  loading: () => (
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <Skeleton className="h-80 rounded-lg lg:col-span-2" />
+      <Skeleton className="h-80 rounded-lg" />
+    </div>
+  ),
+});
 
 export default function DashboardPage() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => apiFetch<DashboardStats>('/api/admin/dashboard/stats'),
   });
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-20 text-center">
+        <p className="text-muted-foreground">Couldn&apos;t load dashboard data.</p>
+        <Button onClick={() => refetch()}>Retry</Button>
+      </div>
+    );
+  }
 
   if (isLoading || !data) {
     return (
@@ -43,7 +60,6 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Dashboard</h1>
 
-      {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpis.map((kpi, i) => (
           <motion.div key={kpi.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
@@ -60,85 +76,12 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Revenue line/area chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Revenue (last 30 days)</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={data.revenueSeries}>
-                <defs>
-                  <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3866df" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#3866df" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Area type="monotone" dataKey="revenue" stroke="#3866df" strokeWidth={2} fill="url(#rev)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      <DashboardCharts data={data} />
 
-        {/* Status pie */}
-        <Card>
-          <CardHeader><CardTitle>Order status</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={data.statusDistribution} dataKey="count" nameKey="status" cx="50%" cy="50%" outerRadius={90} label={(e) => e.status}>
-                  {data.statusDistribution.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Top products bar */}
-        <Card>
-          <CardHeader><CardTitle>Top selling products</CardTitle></CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={data.topProducts} layout="vertical" margin={{ left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} tickFormatter={(n: string) => n.slice(0, 16)} />
-                <Tooltip />
-                <Bar dataKey="quantity" fill="#3866df" radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Low stock */}
-        <Card>
-          <CardHeader><CardTitle>Low stock alerts</CardTitle></CardHeader>
-          <CardContent className="space-y-2">
-            {data.lowStock.length === 0 ? (
-              <p className="text-sm text-muted-foreground">All products well stocked.</p>
-            ) : (
-              data.lowStock.map((p) => (
-                <div key={p.id} className="flex items-center justify-between text-sm">
-                  <span className="line-clamp-1">{p.name}</span>
-                  <span className={p.stock === 0 ? 'font-semibold text-destructive' : 'font-semibold text-amber-600'}>{p.stock} left</span>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent orders */}
       <Card>
-        <CardHeader><CardTitle>Recent orders</CardTitle></CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0">
+          <div className="border-b p-4 font-semibold">Recent orders</div>
+          <div className="overflow-x-auto p-4">
             <table className="w-full text-sm">
               <thead className="text-left text-muted-foreground">
                 <tr className="border-b">
@@ -148,7 +91,7 @@ export default function DashboardPage() {
               <tbody>
                 {data.recentOrders.map((o) => (
                   <tr key={o.id} className="border-b last:border-0 hover:bg-muted/40">
-                    <td className="py-2"><Link href={`/admin/orders`} className="font-medium text-primary">{o.orderNumber}</Link></td>
+                    <td className="py-2"><Link href="/admin/orders" className="font-medium text-primary">{o.orderNumber}</Link></td>
                     <td>{o.user.name}</td>
                     <td>{formatDate(o.createdAt)}</td>
                     <td><OrderStatusBadge status={o.status} /></td>
