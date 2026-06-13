@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,13 +11,42 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useServerCart, useCartMutations } from '@/hooks/use-cart';
 import { useGuestCart } from '@/stores/cart-store';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PRICING } from '@/lib/pricing';
 import { formatCurrency } from '@/lib/utils';
 
 export default function CartPage() {
   const { status } = useSession();
+  const [mounted, setMounted] = useState(false);
+  // Guest cart lives in localStorage (absent during SSR) — wait for mount to
+  // avoid a hydration mismatch, showing a shimmer skeleton meanwhile.
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <CartSkeleton />;
   if (status === 'authenticated') return <ServerCart />;
   return <GuestCartView />;
+}
+
+function CartSkeleton() {
+  return (
+    <div className="container py-6">
+      <Skeleton className="mb-6 h-8 w-48" />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex gap-4 rounded-lg border p-3">
+              <Skeleton className="h-24 w-24 shrink-0" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-8 w-28" />
+              </div>
+            </div>
+          ))}
+        </div>
+        <Skeleton className="h-64 w-full rounded-lg" />
+      </div>
+    </div>
+  );
 }
 
 function EmptyCart() {
@@ -67,7 +96,7 @@ function ServerCart() {
   const { updateQuantity, removeItem, applyCoupon, removeCoupon } = useCartMutations();
   const [code, setCode] = useState('');
 
-  if (isLoading) return <div className="container py-10 text-center text-muted-foreground">Loading cart…</div>;
+  if (isLoading) return <CartSkeleton />;
   if (!cart || cart.items.length === 0) return <EmptyCart />;
 
   const { pricing } = cart;

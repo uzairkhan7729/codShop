@@ -17,11 +17,17 @@ import { cn } from '@/lib/utils';
 export function Navbar() {
   const router = useRouter();
   const { data: session } = useSession();
-  const count = useCartCount();
+  const rawCount = useCartCount();
   const { openDrawer, pulse } = useCartUI();
   const [query, setQuery] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const cartControls = useAnimationControls();
+
+  // The cart count derives from localStorage (guest) which is unavailable during
+  // SSR — gate it behind mount to avoid a hydration mismatch on the badge.
+  useEffect(() => setMounted(true), []);
+  const count = mounted ? rawCount : 0;
 
   // Bounce the cart icon whenever an item is added (pulse increments).
   useEffect(() => {

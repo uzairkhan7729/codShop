@@ -153,7 +153,22 @@ function ProductsBrowser() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<div className="container py-10 text-center text-muted-foreground">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="container py-6">
+          <Skeleton className="mb-4 h-8 w-48" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="aspect-square w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))}
+          </div>
+        </div>
+      }
+    >
       <ProductsBrowser />
     </Suspense>
   );

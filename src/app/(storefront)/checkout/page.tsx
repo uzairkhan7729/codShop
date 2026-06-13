@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useServerCart } from '@/hooks/use-cart';
 import { useGuestCart } from '@/stores/cart-store';
+import { Skeleton } from '@/components/ui/skeleton';
 import { apiFetch, apiPost, FetchError } from '@/lib/fetcher';
 import { getStripe } from '@/lib/stripe-client';
 import { calculatePricing } from '@/lib/pricing';
@@ -82,7 +83,19 @@ export default function CheckoutPage() {
   const pricing = isGuest ? calculatePricing(guestSubtotal, 0, shippingMethod) : serverCart?.pricing;
 
   if (status === 'loading' || (!isGuest && serverLoading)) {
-    return <div className="container py-10 text-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="container max-w-4xl py-6">
+        <Skeleton className="mb-6 h-8 w-40" />
+        <Skeleton className="mb-8 h-10 w-full" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+          <div className="space-y-3">
+            <Skeleton className="h-40 w-full rounded-lg" />
+            <Skeleton className="h-10 w-44" />
+          </div>
+          <Skeleton className="h-52 w-full rounded-lg" />
+        </div>
+      </div>
+    );
   }
   if (lines.length === 0) {
     return (

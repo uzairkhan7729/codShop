@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useEffect } from 'react';
 import { Heart, MapPin, Package, User } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -24,7 +25,14 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   }, [status, router]);
 
   if (status !== 'authenticated') {
-    return <div className="container py-10 text-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="container grid grid-cols-1 gap-6 py-6 md:grid-cols-[220px_1fr]">
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-9 w-full" />)}
+        </div>
+        <Skeleton className="h-80 w-full rounded-lg" />
+      </div>
+    );
   }
 
   return (
