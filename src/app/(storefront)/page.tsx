@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { HeroCarousel } from '@/components/storefront/hero-carousel';
 import { FlashDeals } from '@/components/storefront/flash-deals';
 import { ProductCard, type ProductCardData } from '@/components/storefront/product-card';
+import { ScrollReveal } from '@/components/storefront/scroll-reveal';
 import { services } from '@/server/services';
 import type { ProductWithRelations } from '@/server/repositories';
 
@@ -70,7 +71,7 @@ export default async function HomePage() {
       <FlashDeals products={deals.items.map(toCard)} />
 
       {/* Trending */}
-      <section>
+      <ScrollReveal>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">Trending now</h2>
           <Link href="/products?sort=best_selling" className="text-sm text-primary hover:underline">
@@ -82,18 +83,18 @@ export default async function HomePage() {
             <ProductCard key={p.id} product={toCard(p)} index={i} />
           ))}
         </div>
-      </section>
+      </ScrollReveal>
 
       {/* Featured */}
       {featured.items.length > 0 && (
-        <section>
+        <ScrollReveal>
           <h2 className="mb-4 text-xl font-bold">Featured for you</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
             {featured.items.map((p, i) => (
               <ProductCard key={p.id} product={toCard(p)} index={i} />
             ))}
           </div>
-        </section>
+        </ScrollReveal>
       )}
 
       {/* Newsletter */}
