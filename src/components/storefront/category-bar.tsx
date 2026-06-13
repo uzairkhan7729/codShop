@@ -57,7 +57,7 @@ export function CategoryBar() {
               href={`/products?category=${dept.slug}`}
               onMouseEnter={() => openOn(dept.id)}
               className={cn(
-                'whitespace-nowrap rounded-md px-3 py-1 text-sm transition-colors hover:bg-background hover:text-foreground',
+                'shrink-0 whitespace-nowrap rounded-md px-3 py-1 text-sm transition-colors hover:bg-background hover:text-foreground',
                 open && active?.id === dept.id ? 'bg-background font-medium text-foreground' : 'text-muted-foreground',
               )}
             >
