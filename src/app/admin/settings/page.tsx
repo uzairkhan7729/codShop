@@ -18,7 +18,7 @@ export default function AdminSettingsPage() {
       <Card>
         <CardHeader><CardTitle>General</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5"><Label>Store name</Label><Input defaultValue="Noon Commerce" /></div>
+          <div className="space-y-1.5"><Label>Store name</Label><Input defaultValue="CodShop" /></div>
           <div className="space-y-1.5"><Label>Currency</Label><Input defaultValue={PRICING.currency} readOnly /></div>
         </CardContent>
       </Card>

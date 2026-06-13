@@ -7,8 +7,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: {
-    default: 'Noon Commerce — Shop everything',
-    template: '%s · Noon Commerce',
+    default: 'CodShop — Shop everything',
+    template: '%s · CodShop',
   },
   description: 'A modern marketplace for electronics, fashion, home, beauty and more.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),

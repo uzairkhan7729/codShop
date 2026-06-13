@@ -18,7 +18,7 @@ const serverSchema = z.object({
   SMTP_PORT: z.coerce.number().optional().default(587),
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
-  EMAIL_FROM: z.string().optional().default('Noon Commerce <no-reply@example.com>'),
+  EMAIL_FROM: z.string().optional().default('CodShop <no-reply@example.com>'),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 

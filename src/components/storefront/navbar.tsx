@@ -9,6 +9,7 @@ import { Heart, LogOut, Menu, Search, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCartCount } from '@/hooks/use-cart';
+import { Logo } from '@/components/storefront/logo';
 import { cn } from '@/lib/utils';
 
 const NAV_CATEGORIES = [
@@ -31,9 +32,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-16 items-center gap-4">
         <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
-          <span className="rounded-md bg-accent px-2 py-1 text-lg font-extrabold text-accent-foreground">
-            noon
-          </span>
+          <Logo className="text-2xl" />
         </Link>
 
         <form onSubmit={submitSearch} className="relative hidden flex-1 md:block">

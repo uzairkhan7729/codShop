@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
+import { Logo } from '@/components/storefront/logo';
 import {
   BarChart3, Boxes, LayoutDashboard, LogOut, Package, ShoppingCart, Tag, Users, Settings,
 } from 'lucide-react';
@@ -29,7 +30,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r bg-card md:flex">
         <Link href="/admin/dashboard" className="flex h-16 items-center gap-2 border-b px-6">
-          <span className="rounded-md bg-accent px-2 py-1 text-lg font-extrabold text-accent-foreground">noon</span>
+          <Logo className="text-lg" />
           <span className="text-sm font-semibold text-muted-foreground">Admin</span>
         </Link>
         <nav className="flex-1 space-y-1 p-3">

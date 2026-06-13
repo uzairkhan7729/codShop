@@ -19,7 +19,7 @@ export class NotificationService {
         <h1 style="color:#3866df;font-size:20px">${title}</h1>
         ${body}
         <hr style="border:none;border-top:1px solid #eee;margin:24px 0"/>
-        <p style="color:#888;font-size:12px">Noon Commerce · This is an automated message.</p>
+        <p style="color:#888;font-size:12px">CodShop · This is an automated message.</p>
       </div></body></html>`;
   }
 

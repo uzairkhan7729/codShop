@@ -64,6 +64,6 @@ export const useGuestCart = create<CartState>()(
       totalCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
       subtotal: () => get().items.reduce((sum, i) => sum + i.price * i.quantity, 0),
     }),
-    { name: 'noon-guest-cart' },
+    { name: 'codshop-guest-cart' },
   ),
 );

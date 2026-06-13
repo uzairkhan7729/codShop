@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSyncGuestCart } from '@/hooks/use-cart';
+import { Logo } from '@/components/storefront/logo';
 
 function LoginForm() {
   const router = useRouter();
@@ -41,9 +42,7 @@ function LoginForm() {
       className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm"
     >
       <Link href="/" className="mb-6 block text-center">
-        <span className="rounded-md bg-accent px-2 py-1 text-2xl font-extrabold text-accent-foreground">
-          noon
-        </span>
+        <Logo className="text-3xl" />
       </Link>
       <h1 className="mb-1 text-2xl font-bold">Sign in</h1>
       <p className="mb-6 text-sm text-muted-foreground">Welcome back — please enter your details.</p>

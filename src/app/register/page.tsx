@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiPost, FetchError } from '@/lib/fetcher';
+import { Logo } from '@/components/storefront/logo';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,9 +42,7 @@ export default function RegisterPage() {
         className="w-full max-w-md rounded-xl border bg-card p-8 shadow-sm"
       >
         <Link href="/" className="mb-6 block text-center">
-          <span className="rounded-md bg-accent px-2 py-1 text-2xl font-extrabold text-accent-foreground">
-            noon
-          </span>
+          <Logo className="text-3xl" />
         </Link>
         <h1 className="mb-1 text-2xl font-bold">Create account</h1>
         <p className="mb-6 text-sm text-muted-foreground">Join us and start shopping.</p>

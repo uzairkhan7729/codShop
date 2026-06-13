@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/storefront/logo';
 
 const COLUMNS = [
   { title: 'Shop', links: ['Electronics', 'Fashion', 'Home', 'Beauty'] },
@@ -11,9 +12,7 @@ export function Footer() {
     <footer className="mt-16 border-t bg-muted/30">
       <div className="container grid grid-cols-2 gap-8 py-12 md:grid-cols-4">
         <div>
-          <span className="rounded-md bg-accent px-2 py-1 text-lg font-extrabold text-accent-foreground">
-            noon
-          </span>
+          <Logo className="text-2xl" />
           <p className="mt-4 text-sm text-muted-foreground">
             Your everyday marketplace for the things you love.
           </p>
@@ -34,7 +33,7 @@ export function Footer() {
         ))}
       </div>
       <div className="border-t py-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Noon Commerce. Built with Next.js, Prisma & MongoDB.
+        © {new Date().getFullYear()} CodShop. Built with Next.js, Prisma & MongoDB.
       </div>
     </footer>
   );
