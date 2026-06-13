@@ -39,7 +39,6 @@ export default function CheckoutPage() {
   const { data: serverCart, isLoading: serverLoading } = useServerCart();
   const guestItems = useGuestCart((s) => s.items);
   const guestSubtotal = useGuestCart((s) => s.subtotal());
-  const guestClear = useGuestCart((s) => s.clear);
 
   const [step, setStep] = useState(0);
   const [email, setEmail] = useState('');
@@ -106,7 +105,7 @@ export default function CheckoutPage() {
           shippingMethod,
           items: guestItems.map((i) => ({ productId: i.productId, variantId: i.variantId, quantity: i.quantity })),
         });
-        guestClear();
+        // Guest cart is cleared on the success page (after payment), not here.
       } else {
         const body = useNew ? { shippingAddress: newAddress, shippingMethod } : { addressId, shippingMethod };
         res = await apiPost('/api/checkout', body);

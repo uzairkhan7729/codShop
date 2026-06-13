@@ -4,20 +4,27 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Confetti, SuccessCheck } from '@/components/storefront/confetti';
 import { apiPost } from '@/lib/fetcher';
+import { useGuestCart } from '@/stores/cart-store';
 
 function SuccessInner() {
   const params = useSearchParams();
   const orderId = params.get('orderId');
   const [confirmed, setConfirmed] = useState(false);
+  const queryClient = useQueryClient();
+  const clearGuest = useGuestCart((s) => s.clear);
 
   useEffect(() => {
     if (!orderId) return;
     // The webhook is the source of truth, but confirm here for instant feedback.
     apiPost('/api/checkout/confirm', { orderId }).catch(() => undefined).finally(() => setConfirmed(true));
-  }, [orderId]);
+    // Payment done — empty the cart (guest store + refresh the server cart badge).
+    clearGuest();
+    queryClient.invalidateQueries({ queryKey: ['cart'] });
+  }, [orderId, clearGuest, queryClient]);
 
   return (
     <div className="container flex min-h-[70vh] flex-col items-center justify-center gap-4 text-center">

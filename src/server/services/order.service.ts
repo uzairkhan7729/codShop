@@ -162,7 +162,8 @@ export class OrderService {
       // checkouts; it is rolled back if the order is later cancelled.
       if (couponId) await this.couponService.redeem(couponId, userId, order.id);
 
-      await this.carts.clear(cart.id);
+      // NOTE: the cart is intentionally NOT cleared here. It is emptied only once
+      // payment succeeds (markPaid), so an abandoned/failed checkout keeps the cart.
       return order;
     } catch (error) {
       // Persisting failed after stock was reserved — give it back.
@@ -181,6 +182,13 @@ export class OrderService {
     await Promise.all(
       order.items.map((i) => this.products.update(i.productId, { soldCount: { increment: i.quantity } })),
     );
+    // Empty the cart now that payment is confirmed.
+    try {
+      const cart = await this.carts.getOrCreate(order.userId);
+      await this.carts.clear(cart.id);
+    } catch {
+      // non-fatal
+    }
     await this.notifications.sendOrderConfirmationEmail(orderId).catch(() => undefined);
     return updated;
   }
