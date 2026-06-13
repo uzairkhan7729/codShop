@@ -2,11 +2,15 @@ import type { Category, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 
 export type CategoryWithChildren = Category & { children: Category[] };
+export type MegaCategory = Category & {
+  children: (Category & { children: Category[] })[];
+};
 
 /** ICategoryRepository — hierarchy reads + admin CRUD. */
 export interface ICategoryRepository {
   findAll(): Promise<Category[]>;
   findTree(): Promise<CategoryWithChildren[]>;
+  findMegaTree(): Promise<MegaCategory[]>;
   findBySlug(slug: string): Promise<Category | null>;
   findById(id: string): Promise<Category | null>;
   /** All descendant category ids (inclusive) for filtering products in a subtree. */
@@ -27,8 +31,24 @@ export class CategoryRepository implements ICategoryRepository {
   /** Top-level categories with their immediate children (two-level menu). */
   findTree(): Promise<CategoryWithChildren[]> {
     return prisma.category.findMany({
-      where: { isActive: true, parentId: null },
+      // Top-level docs have no parentId field at all in MongoDB — match with isSet.
+      where: { isActive: true, parentId: { isSet: false } },
       include: { children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  /** Three-level hierarchy for the mega menu: department -> category -> subcategory. */
+  findMegaTree(): Promise<MegaCategory[]> {
+    return prisma.category.findMany({
+      where: { isActive: true, parentId: { isSet: false } },
+      include: {
+        children: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          include: { children: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
+        },
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }

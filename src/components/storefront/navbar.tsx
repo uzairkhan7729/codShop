@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useCartCount } from '@/hooks/use-cart';
 import { useCartUI } from '@/stores/cart-ui-store';
 import { Logo } from '@/components/storefront/logo';
+import { MegaMenu } from '@/components/storefront/mega-menu';
 import { cn } from '@/lib/utils';
 
 const NAV_CATEGORIES = [
@@ -120,9 +121,11 @@ export function Navbar() {
         </nav>
       </div>
 
-      {/* Category strip */}
+      {/* Category strip with mega menu */}
       <div className="border-t bg-muted/40">
-        <div className="container no-scrollbar flex items-center gap-1 overflow-x-auto py-2">
+        <div className="container no-scrollbar flex items-center gap-1 overflow-x-auto py-1">
+          <MegaMenu />
+          <span className="mx-1 hidden h-5 w-px bg-border md:block" />
           {NAV_CATEGORIES.map((c) => (
             <Link
               key={c}

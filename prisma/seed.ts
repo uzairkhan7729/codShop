@@ -32,6 +32,33 @@ const CATEGORIES: { name: string; children: string[] }[] = [
   { name: 'Health', children: ['Supplements', 'Devices'] },
 ];
 
+// 3rd-level subcategories keyed by 2nd-level category name (mega menu depth).
+const SUBCATS: Record<string, string[]> = {
+  Mobiles: ['Smartphones', 'Feature Phones', 'Mobile Accessories'],
+  Laptops: ['Ultrabooks', 'Gaming Laptops', 'Laptop Accessories'],
+  Audio: ['Headphones', 'Speakers', 'Earbuds'],
+  Men: ["Men's Clothing", "Men's Shoes", 'Watches'],
+  Women: ["Women's Clothing", 'Handbags', 'Jewelry'],
+  Kids: ['Boys', 'Girls', 'Infants'],
+  Furniture: ['Sofas', 'Beds', 'Tables'],
+  Kitchen: ['Cookware', 'Appliances', 'Storage'],
+  Decor: ['Lighting', 'Wall Art', 'Rugs'],
+  Skincare: ['Moisturizers', 'Cleansers', 'Sunscreen'],
+  Makeup: ['Lipstick', 'Foundation', 'Eye Makeup'],
+  Fitness: ['Equipment', 'Activewear', 'Recovery'],
+  Outdoor: ['Camping', 'Cycling', 'Hiking'],
+  Fiction: ['Novels', 'Sci-Fi & Fantasy', 'Mystery'],
+  'Non-fiction': ['Biography', 'Self-Help', 'History'],
+  Educational: ['STEM Toys', 'Puzzles', 'Learning'],
+  'Action Figures': ['Superheroes', 'Anime', 'Collectibles'],
+  Beverages: ['Coffee', 'Tea', 'Juices'],
+  Snacks: ['Chips', 'Chocolate', 'Nuts'],
+  Accessories: ['Car Care', 'Interior', 'Car Electronics'],
+  Tools: ['Hand Tools', 'Power Tools', 'Garage'],
+  Supplements: ['Vitamins', 'Protein', 'Herbal'],
+  Devices: ['Monitors', 'Wearables', 'First Aid'],
+};
+
 const BRANDS = [
   'Acme', 'Zenith', 'Lumina', 'NovaTech', 'Apex', 'Vortex', 'Pulse', 'Orbit',
   'Stellar', 'Quantum', 'Fusion', 'Cobalt',
@@ -171,7 +198,22 @@ async function main(): Promise<void> {
           sortOrder: s,
         },
       });
-      leafCategoryIds.push(child.id);
+      // 3rd level (subcategories) — products are assigned to these leaves.
+      const subNames = SUBCATS[childName] ?? ['Popular', 'New Arrivals', 'Best Sellers'];
+      for (let g = 0; g < subNames.length; g++) {
+        const subName = subNames[g]!;
+        const sub = await prisma.category.create({
+          data: {
+            name: subName,
+            slug: slugify(`${childName}-${subName}`),
+            description: `${subName} in ${childName}.`,
+            image: img(`cat-${childName}-${subName}`),
+            parentId: child.id,
+            sortOrder: g,
+          },
+        });
+        leafCategoryIds.push(sub.id);
+      }
     }
   }
   console.log('✓ categories');

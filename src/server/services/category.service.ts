@@ -1,7 +1,7 @@
 import type { Category } from '@prisma/client';
 import { CACHE_KEYS, CACHE_TTL, type ICache } from '@/lib/cache';
 import { NotFoundError } from '@/lib/errors';
-import type { CategoryWithChildren, ICategoryRepository } from '@/server/repositories';
+import type { CategoryWithChildren, ICategoryRepository, MegaCategory } from '@/server/repositories';
 
 /** CategoryService — hierarchy reads (cached) + admin CRUD. */
 export class CategoryService {
@@ -23,6 +23,14 @@ export class CategoryService {
     if (cached) return cached;
     const tree = await this.categories.findTree();
     await this.cache.set(`${CACHE_KEYS.categories}tree`, tree, CACHE_TTL.categories);
+    return tree;
+  }
+
+  async getMegaTree(): Promise<MegaCategory[]> {
+    const cached = await this.cache.get<MegaCategory[]>(`${CACHE_KEYS.categories}mega`);
+    if (cached) return cached;
+    const tree = await this.categories.findMegaTree();
+    await this.cache.set(`${CACHE_KEYS.categories}mega`, tree, CACHE_TTL.categories);
     return tree;
   }
 

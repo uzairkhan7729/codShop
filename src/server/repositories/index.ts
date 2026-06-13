@@ -54,7 +54,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 export * from './types';
 export type { ICartRepository } from './cart.repository';
-export type { ICategoryRepository, CategoryWithChildren } from './category.repository';
+export type { ICategoryRepository, CategoryWithChildren, MegaCategory } from './category.repository';
 export type { ICouponRepository } from './coupon.repository';
 export type { IOrderRepository } from './order.repository';
 export type { IPaymentRepository } from './payment.repository';
