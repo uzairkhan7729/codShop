@@ -9,6 +9,7 @@ import { Heart, Minus, Plus, ShoppingCart, Star, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAddToCart } from '@/hooks/use-cart';
+import { useGuestCart } from '@/stores/cart-store';
 import { apiPost } from '@/lib/fetcher';
 import { toast } from 'sonner';
 import { cn, discountPercent, formatCurrency } from '@/lib/utils';
@@ -18,6 +19,7 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
   const router = useRouter();
   const { status } = useSession();
   const addToCart = useAddToCart();
+  const addGuestItem = useGuestCart((s) => s.addItem);
 
   const [activeImage, setActiveImage] = useState(0);
   const [variantId, setVariantId] = useState<string | null>(product.variants[0]?.id ?? null);
@@ -50,12 +52,22 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
     });
 
   const buyNow = async () => {
-    if (status !== 'authenticated') {
-      router.push(`/login?callbackUrl=/products/${product.slug}`);
-      return;
-    }
     try {
-      await apiPost('/api/cart/items', { productId: product.id, variantId, quantity });
+      if (status === 'authenticated') {
+        await apiPost('/api/cart/items', { productId: product.id, variantId, quantity });
+      } else {
+        // Guest: add to the local cart, then proceed to guest checkout.
+        addGuestItem({
+          productId: product.id,
+          variantId,
+          name: product.name,
+          slug: product.slug,
+          image: images[activeImage] ?? images[0]!,
+          price,
+          quantity,
+          maxQuantity: stock,
+        });
+      }
       router.push('/checkout');
     } catch {
       toast.error('Could not start checkout');

@@ -163,7 +163,7 @@ function DrawerContents({ onClose }: { onClose: () => void }) {
             )}
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => { onClose(); router.push('/cart'); }}>View cart</Button>
-              <Button variant="brand" onClick={() => { onClose(); router.push(isAuth ? '/checkout' : '/login?callbackUrl=/checkout'); }}>
+              <Button variant="brand" onClick={() => { onClose(); router.push('/checkout'); }}>
                 Checkout
               </Button>
             </div>
