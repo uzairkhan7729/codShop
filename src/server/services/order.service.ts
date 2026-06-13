@@ -123,10 +123,12 @@ export class OrderService {
       productId: i.productId,
       quantity: i.quantity,
     }));
+    // Start the order-number lookup concurrently with the stock reservation.
+    const seqPromise = this.orders.nextSequence();
     await this.inventory.reserveStock(stockLines);
+    const seq = await seqPromise;
 
     try {
-      const seq = await this.orders.nextSequence();
       const orderNumber = `ORD-${new Date().getFullYear()}-${String(seq).padStart(5, '0')}`;
 
       const data: Prisma.OrderCreateInput = {
