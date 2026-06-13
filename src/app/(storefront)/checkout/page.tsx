@@ -34,7 +34,7 @@ interface SummaryLine { id: string; name: string; image: string | null; unitPric
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isGuest = status === 'unauthenticated';
 
   const { data: serverCart, isLoading: serverLoading } = useServerCart();
@@ -50,6 +50,7 @@ export default function CheckoutPage() {
   const [shippingMethod, setShippingMethod] = useState<'STANDARD' | 'EXPRESS'>('STANDARD');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNumber, setOrderNumber] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
@@ -113,7 +114,7 @@ export default function CheckoutPage() {
     setCreating(true);
     setPaymentError(null);
     try {
-      let res: { orderId: string; clientSecret: string | null };
+      let res: { orderId: string; orderNumber: string; clientSecret: string | null };
       if (isGuest) {
         res = await apiPost('/api/checkout/guest', {
           email,
@@ -128,6 +129,7 @@ export default function CheckoutPage() {
         res = await apiPost('/api/checkout', body);
       }
       setOrderId(res.orderId);
+      setOrderNumber(res.orderNumber);
       setClientSecret(res.clientSecret);
     } catch (err) {
       setPaymentError(err instanceof FetchError ? err.message : 'Could not start checkout. Please try again.');
@@ -147,6 +149,7 @@ export default function CheckoutPage() {
     setShippingMethod(method);
     setClientSecret(null);
     setOrderId(null);
+    setOrderNumber(null);
     setPaymentError(null);
   };
 
@@ -292,7 +295,11 @@ export default function CheckoutPage() {
               {/* Ready — Stripe Elements */}
               {!creating && clientSecret && orderId && (
                 <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
-                  <PaymentForm orderId={orderId} />
+                  <PaymentForm
+                    orderId={orderId}
+                    orderNumber={orderNumber ?? ''}
+                    email={isGuest ? email : (session?.user?.email ?? '')}
+                  />
                 </Elements>
               )}
 
@@ -343,7 +350,7 @@ function Field({ label, value, onChange, className, type = 'text' }: { label: st
 }
 
 /** Stripe PaymentElement + confirm. Redirects to the success page. */
-function PaymentForm({ orderId }: { orderId: string }) {
+function PaymentForm({ orderId, orderNumber, email }: { orderId: string; orderNumber: string; email: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -352,9 +359,13 @@ function PaymentForm({ orderId }: { orderId: string }) {
     e.preventDefault();
     if (!stripe || !elements) return;
     setSubmitting(true);
+    const successUrl = new URL(`${window.location.origin}/checkout/success`);
+    successUrl.searchParams.set('orderId', orderId);
+    if (orderNumber) successUrl.searchParams.set('orderNumber', orderNumber);
+    if (email) successUrl.searchParams.set('email', email);
     const { error } = await stripe.confirmPayment({
       elements,
-      confirmParams: { return_url: `${window.location.origin}/checkout/success?orderId=${orderId}` },
+      confirmParams: { return_url: successUrl.toString() },
     });
     if (error) {
       toast.error(error.message ?? 'Payment failed. Please try again.');

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -34,19 +34,13 @@ function TrackInner() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const o = params.get('orderNumber');
-    if (o) setOrderNumber(o);
-  }, [params]);
-
-  const lookup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const runLookup = useCallback(async (on: string, em: string) => {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
       const data = await apiFetch<TrackResult>(
-        `/api/track?orderNumber=${encodeURIComponent(orderNumber.trim())}&email=${encodeURIComponent(email.trim())}`,
+        `/api/track?orderNumber=${encodeURIComponent(on.trim())}&email=${encodeURIComponent(em.trim())}`,
       );
       setResult(data);
     } catch (err) {
@@ -54,6 +48,21 @@ function TrackInner() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Prefill from the URL; auto-search when both order number and email are present
+  // (e.g. arriving from the order-confirmation "Track your order" button).
+  useEffect(() => {
+    const o = params.get('orderNumber');
+    const em = params.get('email');
+    if (o) setOrderNumber(o);
+    if (em) setEmail(em);
+    if (o && em) void runLookup(o, em);
+  }, [params, runLookup]);
+
+  const lookup = (e: React.FormEvent) => {
+    e.preventDefault();
+    void runLookup(orderNumber, email);
   };
 
   const currentStep = result ? FLOW.indexOf(result.status) : -1;
