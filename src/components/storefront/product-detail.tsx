@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Minus, Plus, ShoppingCart, Star, Truck } from 'lucide-react';
+import { Heart, Minus, Plus, ShoppingCart, Star, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAddToCart } from '@/hooks/use-cart';
@@ -22,6 +22,7 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
   const [activeImage, setActiveImage] = useState(0);
   const [variantId, setVariantId] = useState<string | null>(product.variants[0]?.id ?? null);
   const [quantity, setQuantity] = useState(1);
+  const [lightbox, setLightbox] = useState(false);
 
   const variant = product.variants.find((v) => v.id === variantId) ?? null;
   const price = variant?.price ?? product.price;
@@ -65,7 +66,12 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
       {/* Gallery */}
       <div className="space-y-3">
-        <div className="relative aspect-square overflow-hidden rounded-xl border bg-muted">
+        <button
+          type="button"
+          onClick={() => setLightbox(true)}
+          className="group relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl border bg-muted"
+          aria-label="Open image"
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={activeImage}
@@ -75,11 +81,11 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
               transition={{ duration: 0.25 }}
               className="absolute inset-0"
             >
-              <Image src={images[activeImage]!} alt={product.name} fill sizes="(max-width:768px) 100vw, 50vw" className="object-cover" priority />
+              <Image src={images[activeImage]!} alt={product.name} fill sizes="(max-width:768px) 100vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-110" priority />
             </motion.div>
           </AnimatePresence>
           {discount && <Badge variant="destructive" className="absolute left-3 top-3">-{discount}%</Badge>}
-        </div>
+        </button>
         <div className="no-scrollbar flex gap-2 overflow-x-auto">
           {images.map((img, i) => (
             <button
@@ -109,7 +115,15 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
         </div>
 
         <div className="flex items-end gap-3">
-          <span className="text-3xl font-extrabold">{formatCurrency(price)}</span>
+          <motion.span
+            key={price}
+            initial={{ backgroundColor: 'rgba(254,238,0,0.6)' }}
+            animate={{ backgroundColor: 'rgba(254,238,0,0)' }}
+            transition={{ duration: 0.7 }}
+            className="rounded px-1 text-3xl font-extrabold"
+          >
+            {formatCurrency(price)}
+          </motion.span>
           {product.comparePrice && (
             <span className="pb-1 text-lg text-muted-foreground line-through">{formatCurrency(product.comparePrice)}</span>
           )}
@@ -187,6 +201,37 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
           <p>{product.description}</p>
         </div>
       </div>
+
+      {/* Lightbox */}
+      <AnimatePresence>
+        {lightbox && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setLightbox(false)}
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/90 p-4"
+          >
+            <motion.button
+              onClick={() => setLightbox(false)}
+              className="absolute right-4 top-4 text-white/80 hover:text-white"
+              aria-label="Close"
+            >
+              <X className="h-8 w-8" />
+            </motion.button>
+            <motion.div
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative h-[80vh] w-[90vw] max-w-3xl"
+            >
+              <Image src={images[activeImage]!} alt={product.name} fill sizes="90vw" className="object-contain" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
