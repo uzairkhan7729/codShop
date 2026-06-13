@@ -3,11 +3,12 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   images: {
+    // Product images are admin-supplied from arbitrary CDNs, so allow any remote
+    // host. (The '**' hostname wildcard matches any domain.) For a hardened
+    // deployment you'd restrict this to your own/known image CDNs.
     remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'picsum.photos' },
-      { protocol: 'https', hostname: 'loremflickr.com' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
     ],
   },
   experimental: {
