@@ -76,14 +76,20 @@ export function useAddToCart() {
       return null;
     },
     onMutate: (args) => {
-      // Fire the visual immediately (optimistic), before the request resolves.
+      // Instant feedback BEFORE the request resolves: fly animation, icon bounce,
+      // and an optimistic badge bump so the user sees the click registered.
       if (args.image && args.originX != null && args.originY != null) {
         launchFlight(args.image, args.originX, args.originY);
+      }
+      bump();
+      if (status === 'authenticated') {
+        queryClient.setQueryData<CartView>(['cart'], (old) =>
+          old ? { ...old, itemCount: old.itemCount + (args.quantity ?? 1) } : old,
+        );
       }
     },
     onSuccess: (data, args) => {
       queryClient.invalidateQueries({ queryKey: ['cart'] });
-      bump();
       const undo = () => {
         if (status === 'authenticated' && data) {
           const line = data.items.find(
@@ -106,6 +112,8 @@ export function useAddToCart() {
       setTimeout(() => openDrawer(), 900);
     },
     onError: (err) => {
+      // Revert the optimistic badge bump.
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
       toast.error(err instanceof FetchError ? err.message : 'Could not add to cart');
     },
   });

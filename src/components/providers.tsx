@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
+import { NavigationProgress } from '@/components/navigation-progress';
 
 /** Global client providers: NextAuth session, TanStack Query, toasts. */
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -23,6 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
+        <NavigationProgress />
         {children}
         <Toaster position="top-center" richColors closeButton />
       </QueryClientProvider>
