@@ -35,7 +35,7 @@ export default function OrderDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <OrderStatusBadge status={order.status} />
-          <a href={`/api/orders/${order.id}/invoice`}>
+          <a href={`/api/orders/${order.id}/invoice`} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm"><Download className="h-4 w-4" /> Invoice</Button>
           </a>
         </div>

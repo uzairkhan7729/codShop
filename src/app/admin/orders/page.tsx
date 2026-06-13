@@ -143,7 +143,7 @@ function OrderDetailModal({ order, onClose, onChanged }: { order: OrderWithRelat
           <div className="flex gap-2">
             <Button size="sm" onClick={() => updateStatus.mutate()} disabled={updateStatus.isPending}>Update status</Button>
             <Button size="sm" variant="destructive" onClick={() => { if (confirm('Refund this order?')) refund.mutate(); }} disabled={refund.isPending}>Refund</Button>
-            <a href={`/api/orders/${order.id}/invoice`} className="ml-auto"><Button size="sm" variant="outline">Print invoice</Button></a>
+            <a href={`/api/admin/orders/${order.id}/invoice`} target="_blank" rel="noopener noreferrer" className="ml-auto"><Button size="sm" variant="outline">Print invoice</Button></a>
           </div>
         </div>
       </motion.div>

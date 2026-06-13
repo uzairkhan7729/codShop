@@ -270,4 +270,82 @@ export class OrderService {
       `TOTAL:     ${order.total.toFixed(2)}`,
     ].join('\n');
   }
+
+  /** Printable HTML invoice — opens in the browser and auto-triggers print. */
+  async generateInvoiceHtml(orderId: string): Promise<string> {
+    const order = await this.orders.findById(orderId);
+    if (!order) throw new NotFoundError('Order not found', 'ORDER_NOT_FOUND');
+
+    const esc = (v: string | null | undefined) =>
+      String(v ?? '').replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c,
+      );
+    const money = (n: number) => `$${n.toFixed(2)}`;
+    const addr = order.shippingAddress;
+
+    const rows = order.items
+      .map(
+        (i) => `<tr>
+          <td>${esc(i.name)}${i.sku ? `<br><span class="muted">${esc(i.sku)}</span>` : ''}</td>
+          <td class="r">${i.quantity}</td>
+          <td class="r">${money(i.price)}</td>
+          <td class="r">${money(i.total)}</td>
+        </tr>`,
+      )
+      .join('');
+
+    return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Invoice ${esc(order.orderNumber)}</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;padding:32px;max-width:800px}
+  .head{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #3866df;padding-bottom:16px;margin-bottom:24px}
+  .brand{font-size:26px;font-weight:800} .brand .c{color:#3866df}
+  h1{font-size:18px;margin:0 0 4px} .muted{color:#777;font-size:12px}
+  .grid{display:flex;gap:48px;margin-bottom:24px}
+  table{width:100%;border-collapse:collapse;margin-top:8px} th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;font-size:14px}
+  th{background:#f6f7fb} .r{text-align:right}
+  .totals{margin-top:16px;margin-left:auto;width:280px} .totals div{display:flex;justify-content:space-between;padding:4px 0;font-size:14px}
+  .totals .grand{border-top:2px solid #111;margin-top:6px;padding-top:8px;font-weight:800;font-size:16px}
+  .status{display:inline-block;padding:3px 10px;border-radius:99px;background:#eef;color:#3866df;font-size:12px;font-weight:700}
+  .actions{margin-top:32px} button{background:#3866df;color:#fff;border:0;padding:10px 18px;border-radius:8px;font-size:14px;cursor:pointer}
+  @media print{.actions{display:none}}
+</style></head>
+<body>
+  <div class="head">
+    <div><div class="brand">Cod<span class="c">Shop</span></div><div class="muted">codshop.example.com</div></div>
+    <div style="text-align:right">
+      <h1>INVOICE</h1>
+      <div class="muted">${esc(order.orderNumber)}</div>
+      <div class="muted">${order.createdAt.toISOString().slice(0, 10)}</div>
+      <div style="margin-top:6px"><span class="status">${esc(order.status)}</span></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div><strong>Billed to</strong><br>${esc(order.user.name)}<br><span class="muted">${esc(order.user.email)}</span></div>
+    <div><strong>Ship to</strong><br>${esc(addr.fullName)}<br>
+      <span class="muted">${esc(addr.line1)}${addr.line2 ? ', ' + esc(addr.line2) : ''}<br>
+      ${esc(addr.city)}, ${esc(addr.state)} ${esc(addr.postalCode)}, ${esc(addr.country)}<br>${esc(addr.phone)}</span>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Total</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <div class="totals">
+    <div><span>Subtotal</span><span>${money(order.subtotal)}</span></div>
+    ${order.discount > 0 ? `<div><span>Discount</span><span>-${money(order.discount)}</span></div>` : ''}
+    <div><span>Tax</span><span>${money(order.tax)}</span></div>
+    <div><span>Shipping</span><span>${order.shippingCost === 0 ? 'Free' : money(order.shippingCost)}</span></div>
+    <div class="grand"><span>Total</span><span>${money(order.total)}</span></div>
+  </div>
+
+  ${order.trackingNumber ? `<p class="muted" style="margin-top:24px">Tracking: ${esc(order.trackingNumber)}${order.carrier ? ' · ' + esc(order.carrier) : ''}</p>` : ''}
+
+  <div class="actions"><button onclick="window.print()">Print invoice</button></div>
+  <script>window.addEventListener('load',function(){setTimeout(function(){window.print()},300)})</script>
+</body></html>`;
+  }
 }
