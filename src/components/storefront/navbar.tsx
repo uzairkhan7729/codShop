@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 import { motion, AnimatePresence, useAnimationControls } from 'framer-motion';
-import { Heart, LogOut, Menu, Search, ShoppingCart, User } from 'lucide-react';
+import { Heart, LogOut, MapPin, Menu, Search, ShoppingCart, Truck, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCartCount } from '@/hooks/use-cart';
@@ -36,6 +36,23 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      {/* Top utility strip */}
+      <div className="bg-primary text-primary-foreground">
+        <div className="container flex h-8 items-center justify-between text-xs">
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3.5 w-3.5" /> Deliver to United States
+          </span>
+          <span className="hidden items-center gap-1.5 font-medium sm:flex">
+            <Truck className="h-3.5 w-3.5" /> Free shipping on orders over $200 · 30-day easy returns
+          </span>
+          <div className="flex items-center gap-4">
+            <Link href="/account/orders" className="hover:underline">Track Order</Link>
+            <Link href="/products" className="hidden hover:underline sm:inline">Help</Link>
+            <Link href="/admin/dashboard" className="hidden hover:underline md:inline">Sell on CodShop</Link>
+          </div>
+        </div>
+      </div>
+
       <div className="container flex h-16 items-center gap-4">
         <Link href="/" className="flex items-center gap-2 shrink-0" aria-label="Home">
           <Logo className="text-2xl" />

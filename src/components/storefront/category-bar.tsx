@@ -50,7 +50,7 @@ export function CategoryBar() {
 
         <span className="mx-1 hidden h-5 w-px bg-border md:block" />
 
-        <div className="no-scrollbar flex items-center gap-1 overflow-x-auto">
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {depts.map((dept) => (
             <Link
               key={dept.id}
@@ -64,6 +64,22 @@ export function CategoryBar() {
               {dept.name}
             </Link>
           ))}
+        </div>
+
+        {/* Right-aligned promo / service links */}
+        <div className="ml-auto hidden shrink-0 items-center gap-1 lg:flex" onMouseEnter={() => setOpen(false)}>
+          <Link href="/products?sort=best_selling" className="whitespace-nowrap rounded-md px-3 py-1 text-sm font-medium text-rose-600 hover:bg-background">
+            Today&apos;s Deals
+          </Link>
+          <Link href="/products?sort=newest" className="whitespace-nowrap rounded-md px-3 py-1 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+            New Arrivals
+          </Link>
+          <Link href="/products?sort=best_selling" className="whitespace-nowrap rounded-md px-3 py-1 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+            Best Sellers
+          </Link>
+          <Link href="/account/orders" className="whitespace-nowrap rounded-md px-3 py-1 text-sm text-muted-foreground hover:bg-background hover:text-foreground">
+            Customer Service
+          </Link>
         </div>
       </div>
 
