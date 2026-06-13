@@ -1,16 +1,20 @@
 import { z } from 'zod';
 import { ok, parseBody, route } from '@/lib/api';
-import { requireUser } from '@/lib/auth';
+import { BadRequestError } from '@/lib/errors';
+import { clientIp, rateLimit } from '@/lib/rate-limit';
 import { services } from '@/server/services';
 
 const confirmSchema = z.object({ orderId: z.string().min(1) });
 
 /**
- * POST /api/checkout/confirm — fallback confirmation (the webhook is the source
- * of truth, but this lets the success page verify immediately after redirect).
+ * POST /api/checkout/confirm — public confirmation fallback (the webhook is the
+ * source of truth). Works for guests too: it verifies the payment with Stripe
+ * and only marks the order PAID if Stripe says the charge succeeded.
  */
 export const POST = route(async (request: Request) => {
-  const user = await requireUser();
+  const limit = await rateLimit(`confirm:${clientIp(request)}`, 60, 60);
+  if (!limit.allowed) throw new BadRequestError('Too many attempts. Please try again later.', 'RATE_LIMITED');
+
   const { orderId } = await parseBody(request, confirmSchema);
-  return ok(await services.payments.confirmPayment(orderId, user.id));
+  return ok(await services.payments.confirmPayment(orderId));
 });

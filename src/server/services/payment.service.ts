@@ -59,11 +59,16 @@ export class PaymentService {
     return { clientSecret: intent.clientSecret, paymentIntentId: intent.id, amount: order.total };
   }
 
-  /** Verify with the gateway and finalize (used by the confirm endpoint as a fallback to webhooks). */
-  async confirmPayment(orderId: string, userId: string): Promise<{ status: string; paid: boolean }> {
+  /**
+   * Verify the payment with the gateway and finalize (fallback to the webhook).
+   * Safe to call without an authenticated user: it only marks the order PAID if
+   * Stripe confirms the intent actually succeeded, so it merely reflects reality.
+   * When userId is provided, ownership is still enforced.
+   */
+  async confirmPayment(orderId: string, userId?: string): Promise<{ status: string; paid: boolean }> {
     const order = await this.orders.findById(orderId);
     if (!order) throw new NotFoundError('Order not found', 'ORDER_NOT_FOUND');
-    if (order.userId !== userId) throw new BadRequestError('Order does not belong to you');
+    if (userId && order.userId !== userId) throw new BadRequestError('Order does not belong to you');
 
     const payment = await this.payments.findByOrder(orderId);
     if (!payment?.stripePaymentIntentId) {
