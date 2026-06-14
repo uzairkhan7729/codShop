@@ -9,6 +9,7 @@ import { Heart, Minus, Plus, ShoppingCart, Star, Truck, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAddToCart } from '@/hooks/use-cart';
+import { useToggleWishlist, useWishlistIds } from '@/hooks/use-wishlist';
 import { useGuestCart } from '@/stores/cart-store';
 import { apiPost } from '@/lib/fetcher';
 import { toast } from 'sonner';
@@ -19,6 +20,8 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
   const router = useRouter();
   const { status } = useSession();
   const addToCart = useAddToCart();
+  const wishlist = useToggleWishlist();
+  const wished = useWishlistIds().has(product.id);
   const addGuestItem = useGuestCart((s) => s.addItem);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -192,14 +195,11 @@ export function ProductDetail({ product }: { product: ProductWithRelations }) {
             variant="outline"
             size="icon"
             className="h-11 w-11"
-            aria-label="Add to wishlist"
-            onClick={async () => {
-              if (status !== 'authenticated') { router.push('/login'); return; }
-              await apiPost('/api/wishlist', { productId: product.id });
-              toast.success('Wishlist updated');
-            }}
+            aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+            disabled={wishlist.isPending}
+            onClick={() => wishlist.toggle(product.id)}
           >
-            <Heart className="h-5 w-5" />
+            <Heart className={cn('h-5 w-5 transition-colors', wished && 'fill-rose-500 text-rose-500')} />
           </Button>
         </div>
 

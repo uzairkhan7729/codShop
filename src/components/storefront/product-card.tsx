@@ -3,15 +3,12 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Check, Heart, Loader2, ShoppingCart, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAddToCart } from '@/hooks/use-cart';
-import { apiPost } from '@/lib/fetcher';
-import { toast } from 'sonner';
+import { useToggleWishlist, useWishlistIds } from '@/hooks/use-wishlist';
 import { cn, discountPercent, formatCurrency } from '@/lib/utils';
 
 export interface ProductCardData {
@@ -28,11 +25,11 @@ export interface ProductCardData {
 }
 
 export function ProductCard({ product, index = 0 }: { product: ProductCardData; index?: number }) {
-  const router = useRouter();
-  const { status } = useSession();
   const addToCart = useAddToCart();
+  const wishlist = useToggleWishlist();
+  const wishedIds = useWishlistIds();
+  const wished = wishedIds.has(product.id);
   const [added, setAdded] = useState(false);
-  const [wished, setWished] = useState(false);
 
   const discount = discountPercent(product.price, product.comparePrice);
   const outOfStock = product.stock <= 0;
@@ -59,20 +56,10 @@ export function ProductCard({ product, index = 0 }: { product: ProductCardData; 
     );
   };
 
-  const toggleWish = async (e: React.MouseEvent) => {
+  const toggleWish = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (status !== 'authenticated') {
-      router.push('/login');
-      return;
-    }
-    setWished((w) => !w);
-    try {
-      await apiPost('/api/wishlist', { productId: product.id });
-    } catch {
-      setWished((w) => !w);
-      toast.error('Could not update wishlist');
-    }
+    wishlist.toggle(product.id);
   };
 
   return (
@@ -101,20 +88,22 @@ export function ProductCard({ product, index = 0 }: { product: ProductCardData; 
             Out of stock
           </div>
         )}
-
-        {/* Wishlist heart */}
-        <motion.button
-          onClick={toggleWish}
-          whileTap={{ scale: 0.8 }}
-          whileHover={{ scale: 1.15 }}
-          aria-label="Add to wishlist"
-          className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 shadow-sm backdrop-blur"
-        >
-          <motion.span animate={wished ? { scale: [1, 1.4, 1] } : { scale: 1 }} transition={{ duration: 0.3 }}>
-            <Heart className={cn('h-4 w-4 transition-colors', wished ? 'fill-rose-500 text-rose-500' : 'text-foreground')} />
-          </motion.span>
-        </motion.button>
       </Link>
+
+      {/* Wishlist heart — sibling of the link (not nested) so it never navigates */}
+      <motion.button
+        type="button"
+        onClick={toggleWish}
+        disabled={wishlist.isPending}
+        whileTap={{ scale: 0.8 }}
+        whileHover={{ scale: 1.15 }}
+        aria-label={wished ? 'Remove from wishlist' : 'Add to wishlist'}
+        className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 shadow-sm backdrop-blur"
+      >
+        <motion.span key={String(wished)} animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.3 }}>
+          <Heart className={cn('h-4 w-4 transition-colors', wished ? 'fill-rose-500 text-rose-500' : 'text-foreground')} />
+        </motion.span>
+      </motion.button>
 
       <div className="flex flex-1 flex-col p-3">
         {product.brand && <p className="text-xs text-muted-foreground">{product.brand}</p>}
