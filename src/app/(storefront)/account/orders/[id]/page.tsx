@@ -35,6 +35,11 @@ export default function OrderDetailPage() {
         </div>
         <div className="flex items-center gap-2">
           <OrderStatusBadge status={order.status} />
+          {!['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status) && (
+            <Link href={`/track?orderNumber=${encodeURIComponent(order.orderNumber)}&email=${encodeURIComponent(order.user.email)}`}>
+              <Button size="sm"><Truck className="h-4 w-4" /> Track order</Button>
+            </Link>
+          )}
           <a href={`/api/orders/${order.id}/invoice`} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm"><Download className="h-4 w-4" /> Invoice</Button>
           </a>

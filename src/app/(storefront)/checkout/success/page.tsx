@@ -22,10 +22,16 @@ function SuccessInner() {
   useEffect(() => {
     if (!orderId) return;
     // The webhook is the source of truth, but confirm here for instant feedback.
-    apiPost('/api/checkout/confirm', { orderId }).catch(() => undefined).finally(() => setConfirmed(true));
-    // Payment done — empty the cart (guest store + refresh the server cart badge).
-    clearGuest();
-    queryClient.invalidateQueries({ queryKey: ['cart'] });
+    // IMPORTANT: refresh the cart only AFTER confirm finishes — confirm marks the
+    // order paid and clears the server cart, so refetching earlier would re-cache
+    // the still-full cart and the items would appear to linger.
+    apiPost('/api/checkout/confirm', { orderId })
+      .catch(() => undefined)
+      .finally(() => {
+        setConfirmed(true);
+        clearGuest();
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+      });
   }, [orderId, clearGuest, queryClient]);
 
   // Deep-link to tracking with the order number + email prefilled.
