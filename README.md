@@ -1,4 +1,4 @@
-# Noon-style E-Commerce Platform
+# CodShop — E-Commerce Platform
 
 > **Why this repo is public.** I've intentionally kept this codebase open. It's a showcase — not a tutorial clone. After ~10 years of building e-commerce systems, I wanted a single, real, end-to-end project that technical people can actually *read*: the architecture decisions, the trade-offs, the boring-but-important parts (transactions, stock reservation, idempotent webhooks, RBAC, caching) that separate a demo from something you'd run in production.
 >

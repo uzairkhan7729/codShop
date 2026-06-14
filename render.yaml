@@ -8,7 +8,7 @@
 # later, create a Key Value instance and set REDIS_URL in the dashboard.
 services:
   - type: web
-    name: noon-commerce
+    name: codshop
     runtime: node
     plan: free
     buildCommand: npm install && npm run build
