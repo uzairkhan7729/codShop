@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: {
-    default: 'CodShop — Shop everything',
+    default: 'CodShop. Shop everything.',
     template: '%s · CodShop',
   },
   description: 'A modern marketplace for electronics, fashion, home, beauty and more.',

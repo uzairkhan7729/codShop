@@ -83,7 +83,13 @@ export default function CheckoutPage() {
     [isGuest, guestItems, serverCart],
   );
   const subtotal = isGuest ? guestSubtotal : (serverCart?.pricing.subtotal ?? 0);
-  const pricing = isGuest ? calculatePricing(guestSubtotal, 0, shippingMethod) : serverCart?.pricing;
+  // Recompute with the SELECTED shipping method so Express (+$25) is reflected
+  // in the summary. (The cart's own pricing assumes Standard shipping.)
+  const pricing = isGuest
+    ? calculatePricing(guestSubtotal, 0, shippingMethod)
+    : serverCart
+      ? calculatePricing(serverCart.pricing.subtotal, serverCart.pricing.discount, shippingMethod)
+      : undefined;
 
   if (status === 'loading' || (!isGuest && serverLoading)) {
     return (
