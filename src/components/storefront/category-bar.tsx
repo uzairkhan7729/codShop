@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutGrid } from 'lucide-react';
+import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { apiFetch } from '@/lib/fetcher';
 import { cn } from '@/lib/utils';
 import type { MegaCategory } from '@/server/repositories';
+
+const fallbackImg = (seed: string) => `https://picsum.photos/seed/${encodeURIComponent(seed)}/200/200`;
 
 /**
  * Category bar + shared mega flyout. Hovering "All Categories" OR any department
@@ -94,8 +97,8 @@ export function CategoryBar() {
             className="absolute inset-x-0 top-full z-50 border-b bg-popover shadow-2xl"
           >
             <div className="container flex">
-              {/* Department rail */}
-              <ul className="w-56 shrink-0 border-r py-2">
+              {/* Department rail with thumbnails */}
+              <ul className="w-60 shrink-0 border-r py-2">
                 {depts.map((dept) => (
                   <li key={dept.id}>
                     <Link
@@ -103,11 +106,19 @@ export function CategoryBar() {
                       onMouseEnter={() => setActiveId(dept.id)}
                       onClick={() => setOpen(false)}
                       className={cn(
-                        'flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors',
-                        active.id === dept.id ? 'bg-muted font-semibold text-primary' : 'hover:bg-muted',
+                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
+                        active.id === dept.id ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted',
                       )}
                     >
-                      {dept.name}
+                      <Image
+                        src={dept.image ?? fallbackImg(dept.slug)}
+                        alt=""
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 shrink-0 rounded-md object-cover"
+                      />
+                      <span className="flex-1">{dept.name}</span>
+                      <ChevronRight className={cn('h-4 w-4 transition-opacity', active.id === dept.id ? 'opacity-100' : 'opacity-30')} />
                     </Link>
                   </li>
                 ))}
@@ -121,22 +132,33 @@ export function CategoryBar() {
                 transition={{ duration: 0.2 }}
                 className="flex-1 p-5"
               >
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-4 flex items-center justify-between">
                   <h3 className="text-base font-bold">{active.name}</h3>
                   <Link href={`/products?category=${active.slug}`} onClick={() => setOpen(false)} className="text-xs font-medium text-primary hover:underline">
-                    Shop all {active.name}
+                    Shop all {active.name} →
                   </Link>
                 </div>
                 {active.children.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Browse all products in {active.name}.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-4 md:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-3">
                     {active.children.map((cat) => (
                       <div key={cat.id}>
-                        <Link href={`/products?category=${cat.slug}`} onClick={() => setOpen(false)} className="mb-1.5 block text-sm font-semibold hover:text-primary">
-                          {cat.name}
+                        <Link
+                          href={`/products?category=${cat.slug}`}
+                          onClick={() => setOpen(false)}
+                          className="group mb-2 flex items-center gap-2.5"
+                        >
+                          <Image
+                            src={cat.image ?? fallbackImg(cat.slug)}
+                            alt=""
+                            width={40}
+                            height={40}
+                            className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-border transition-transform group-hover:scale-105"
+                          />
+                          <span className="text-sm font-semibold group-hover:text-primary">{cat.name}</span>
                         </Link>
-                        <ul className="space-y-1">
+                        <ul className="space-y-1 pl-0.5">
                           {cat.children.map((sub) => (
                             <li key={sub.id}>
                               <Link
@@ -154,6 +176,27 @@ export function CategoryBar() {
                   </div>
                 )}
               </motion.div>
+
+              {/* Promo image panel */}
+              <Link
+                href={`/products?category=${active.slug}`}
+                onClick={() => setOpen(false)}
+                className="relative m-4 hidden w-64 shrink-0 overflow-hidden rounded-xl xl:block"
+              >
+                <Image
+                  src={active.image ?? fallbackImg(active.slug)}
+                  alt={active.name}
+                  fill
+                  sizes="256px"
+                  className="object-cover transition-transform duration-500 hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-0 p-4 text-white">
+                  <p className="text-xs uppercase tracking-wide text-white/80">Featured</p>
+                  <p className="text-lg font-bold">Explore {active.name}</p>
+                  <span className="mt-2 inline-block rounded-md bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">Shop now</span>
+                </div>
+              </Link>
             </div>
           </motion.div>
         )}
