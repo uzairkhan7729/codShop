@@ -1,11 +1,16 @@
 # Render deployment blueprint.
 # A single full-stack Next.js web service (storefront + admin + API routes),
-# backed by MongoDB Atlas (set DATABASE_URL manually) and Render Redis.
+# backed by MongoDB Atlas (set DATABASE_URL manually).
+#
+# Runs entirely on Render's FREE plan — no card required.
+# Redis is intentionally omitted: the app falls back to an in-memory cache when
+# REDIS_URL is unset, which is fine for a single free instance. To add Redis
+# later, create a Key Value instance and set REDIS_URL in the dashboard.
 services:
   - type: web
     name: noon-commerce
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
@@ -29,16 +34,5 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: REDIS_URL
-        fromService:
-          name: noon-commerce-redis
-          type: redis
-          property: connectionString
       - key: NEXT_PUBLIC_APP_URL
         sync: false
-
-  - type: redis
-    name: noon-commerce-redis
-    plan: starter
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: [] # only accessible from Render services
