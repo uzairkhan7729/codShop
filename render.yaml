@@ -11,13 +11,17 @@ services:
     name: codshop
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    # --include=dev is required: NODE_ENV=production makes npm skip devDependencies,
+    # but the build needs them (next, typescript, tailwindcss, postcss, autoprefixer).
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: "20.18.0" # pin to Node 20 LTS (Next 14); avoid Render picking Node 26 from ">=20"
       - key: DATABASE_URL
         sync: false # set to your MongoDB Atlas URI in the dashboard
       - key: NEXTAUTH_URL
